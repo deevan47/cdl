@@ -1,0 +1,217 @@
+<div class="flex h-screen bg-gray-100 dark:bg-gray-950 transition-colors duration-300 font-sans">
+    
+  <!-- Sidebar -->
+  <div [class.w-20]="isSidebarCollapsed" [class.w-64]="!isSidebarCollapsed" class="hidden md:flex flex-col px-4 py-8 bg-white border-r dark:bg-gray-900 dark:border-gray-700 transition-all duration-300">
+      <div class="flex items-center justify-between">
+          <h2 *ngIf="!isSidebarCollapsed" class="text-3xl font-semibold text-gray-800 dark:text-white">User</h2>
+          <button (click)="toggleSidebar()" class="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700">
+              <span [innerHTML]="getIcon(isSidebarCollapsed ? 'chevronRight' : 'chevronLeft')"></span>
+          </button>
+      </div>
+
+      <div class="flex flex-col items-center mt-6 -mx-2 border-t dark:border-gray-700 pt-4">
+          <img [src]="currentUser?.avatar" class="rounded-full object-cover ring-2 ring-white dark:ring-gray-800" [class.w-8]="isSidebarCollapsed" [class.h-8]="isSidebarCollapsed" [class.w-16]="!isSidebarCollapsed" [class.h-16]="!isSidebarCollapsed">
+          <div *ngIf="!isSidebarCollapsed" class="mt-2 text-center">
+              <h4 class="font-medium text-gray-800 dark:text-gray-200">{{ currentUser?.name }}</h4>
+              <p class="text-sm text-gray-600 dark:text-gray-400">{{ currentUser?.role }}</p>
+          </div>
+      </div>
+
+      <nav class="flex-1 mt-8 space-y-2">
+          <a (click)="navigateTo('home')" [class.bg-gray-200]="currentView === 'home'" [class.dark:bg-gray-700]="currentView === 'home'" class="flex items-center px-4 py-2 rounded-md cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 dark:hover:text-gray-200 transition-colors" [class.justify-center]="isSidebarCollapsed">
+              <span [innerHTML]="getIcon('home')"></span>
+              <span *ngIf="!isSidebarCollapsed" class="mx-4 font-medium">Dashboard</span>
+          </a>
+          <a (click)="navigateTo('profile')" [class.bg-gray-200]="currentView === 'profile'" [class.dark:bg-gray-700]="currentView === 'profile'" class="flex items-center px-4 py-2 rounded-md cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 dark:hover:text-gray-200 transition-colors" [class.justify-center]="isSidebarCollapsed">
+              <span [innerHTML]="getIcon('user')"></span>
+              <span *ngIf="!isSidebarCollapsed" class="mx-4 font-medium">Profile</span>
+          </a>
+          <a (click)="navigateTo('settings')" [class.bg-gray-200]="currentView === 'settings'" [class.dark:bg-gray-700]="currentView === 'settings'" class="flex items-center px-4 py-2 rounded-md cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 dark:hover:text-gray-200 transition-colors" [class.justify-center]="isSidebarCollapsed">
+              <span [innerHTML]="getIcon('settings')"></span>
+              <span *ngIf="!isSidebarCollapsed" class="mx-4 font-medium">Settings</span>
+          </a>
+          <a (click)="navigateTo('notifications')" [class.bg-gray-200]="currentView === 'notifications'" [class.dark:bg-gray-700]="currentView === 'notifications'" class="flex items-center px-4 py-2 rounded-md cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 dark:hover:text-gray-200 transition-colors" [class.justify-center]="isSidebarCollapsed">
+              <span [innerHTML]="getIcon('bell')"></span>
+              <span *ngIf="!isSidebarCollapsed" class="mx-4 font-medium">Notifications</span>
+          </a>
+          <a (click)="navigateTo('messages')" [class.bg-gray-200]="currentView === 'messages'" [class.dark:bg-gray-700]="currentView === 'messages'" class="flex items-center px-4 py-2 rounded-md cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 dark:hover:text-gray-200 transition-colors" [class.justify-center]="isSidebarCollapsed">
+              <span [innerHTML]="getIcon('message')"></span>
+              <span *ngIf="!isSidebarCollapsed" class="mx-4 font-medium">Messages</span>
+          </a>
+      </nav>
+
+      <div class="flex flex-col items-center mt-6 -mx-2">
+          <button (click)="toggleDarkMode()" class="w-full flex items-center justify-center px-4 py-2 mb-2 text-gray-600 bg-gray-100 rounded-lg dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700">
+              <span [innerHTML]="getIcon(isDarkMode ? 'sun' : 'moon')"></span>
+              <span *ngIf="!isSidebarCollapsed" class="mx-2 font-medium">{{ isDarkMode ? 'Light' : 'Dark' }}</span>
+          </button>
+          <a routerLink="/auth/logout" class="w-full flex items-center justify-center px-4 py-2 text-gray-600 bg-gray-100 rounded-lg dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700">
+              <span [innerHTML]="getIcon('logout')"></span>
+              <span *ngIf="!isSidebarCollapsed" class="mx-2 font-medium">Logout</span>
+          </a>
+      </div>
+  </div>
+
+  <!-- Main Content -->
+  <main class="flex-1 flex flex-col overflow-hidden">
+      <div class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 dark:bg-gray-950">
+          
+          <!-- VIEW: HOME DASHBOARD -->
+          <div *ngIf="currentView === 'home'" class="p-6 md:p-8 space-y-8">
+              <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Welcome, {{ currentUser?.name?.split(' ')[0] }}!</h1>
+              <p class="text-gray-600 dark:text-gray-300">Here's a look at your assigned projects.</p>
+
+              <div class="grid grid-cols-1 gap-8 md:grid-cols-2">
+                  <div (click)="navigateTo('flame')" class="p-8 rounded-xl bg-gradient-to-br from-orange-400 to-red-500 text-white shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+                      <h2 class="text-4xl font-bold">Flame</h2>
+                      <p class="mt-2 text-lg opacity-80">Internal Creative Projects</p>
+                  </div>
+                  <div (click)="navigateTo('swayam')" class="p-8 rounded-xl bg-gradient-to-br from-blue-400 to-indigo-500 text-white shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+                      <h2 class="text-4xl font-bold">Swayam</h2>
+                      <p class="mt-2 text-lg opacity-80">External Educational Courses</p>
+                  </div>
+              </div>
+
+              <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+                  <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Your Projects Overview</h3>
+                  <div class="flex flex-wrap items-center gap-4 mb-6 text-sm text-gray-600 dark:text-gray-300">
+                      <span>Total: <span class="font-bold text-gray-900 dark:text-white">{{ getStats().total }}</span></span>
+                      <span class="text-green-600 dark:text-green-400">Completed: <span class="font-bold">{{ getStats().completed }}</span></span>
+                      <span class="text-blue-600 dark:text-blue-400">In Progress: <span class="font-bold">{{ getStats().inProgress }}</span></span>
+                      <span class="text-red-600 dark:text-red-400">Lagging: <span class="font-bold">{{ getStats().lagging }}</span></span>
+                  </div>
+                  
+                  <div class="space-y-4">
+                      <div *ngFor="let p of userProjects" (click)="navigateTo(p.platform, p.id)" class="p-4 rounded-lg bg-gray-50 dark:bg-gray-700/50 cursor-pointer hover:shadow-lg transition-shadow">
+                          <div class="flex items-center justify-between">
+                              <div class="flex items-center gap-3">
+                                  <div class="w-3 h-3 rounded-full" [class.bg-orange-500]="p.platform === 'flame'" [class.bg-blue-500]="p.platform === 'swayam'"></div>
+                                  <p class="font-semibold text-gray-800 dark:text-gray-100">{{ p.name }}</p>
+                              </div>
+                              <span [class]="getStatusBadgeClass(p.overallStatus?.color)">{{ p.overallStatus?.label }}</span>
+                          </div>
+                          <div class="mt-3">
+                              <div class="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
+                                  <div [class]="getProgressBarColorClass(p.overallStatus?.color)" class="h-2 rounded-full transition-all duration-500" [style.width.%]="p.overallProgress"></div>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+
+          <!-- VIEW: PLATFORM WORKSPACES (Flame or Swayam) -->
+          <div *ngIf="currentView === 'flame' || currentView === 'swayam'" class="flex h-full">
+              
+              <!-- Project List (Left Panel) -->
+              <div class="w-full md:w-1/3 border-r dark:border-gray-700 flex flex-col h-full">
+                  <div class="p-4 border-b dark:border-gray-700">
+                      <h2 class="text-2xl font-bold capitalize" [class.text-orange-500]="currentView === 'flame'" [class.text-blue-500]="currentView === 'swayam'">{{ currentView }} Projects</h2>
+                  </div>
+                  <div class="flex-grow overflow-y-auto">
+                      <div *ngFor="let p of getFilteredProjects(currentView)" (click)="selectProject(p)" 
+                           class="p-4 border-b dark:border-gray-700 cursor-pointer transition-colors"
+                           [class.bg-orange-500-10]="currentView === 'flame' && selectedProject?.id === p.id"
+                           [class.bg-blue-500-10]="currentView === 'swayam' && selectedProject?.id === p.id"
+                           [class.bg-gray-100]="selectedProject?.id === p.id" 
+                           [class.dark:bg-gray-800]="selectedProject?.id === p.id">
+                           
+                          <div class="flex justify-between items-center">
+                              <p class="font-semibold text-gray-800 dark:text-gray-100">{{ p.name }}</p>
+                              <span [class]="getStatusBadgeClass(p.overallStatus?.color)">{{ p.overallStatus?.label }}</span>
+                          </div>
+                          <div class="mt-2">
+                              <div class="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
+                                  <div [class]="getProgressBarColorClass(p.overallStatus?.color)" class="h-2 rounded-full transition-all duration-500" [style.width.%]="p.overallProgress"></div>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- Project Details (Right Panel) -->
+              <div class="hidden md:block md:w-2/3 bg-white dark:bg-gray-800">
+                  <div *ngIf="selectedProject; else noProjectSelected" class="p-6 h-full overflow-y-auto">
+                      <div class="flex justify-between items-start">
+                          <div>
+                              <h2 class="text-3xl font-bold text-gray-800 dark:text-white">{{ selectedProject.name }}</h2>
+                              <p class="text-gray-500 dark:text-gray-400 mt-1">{{ selectedProject.scenario }}</p>
+                              <div class="flex items-center gap-2 mt-3">
+                                  <img [src]="getUserAvatar(selectedProject.projectManagerId)" class="w-8 h-8 rounded-full object-cover">
+                                  <div>
+                                      <p class="font-semibold text-gray-700 dark:text-gray-200">{{ getUserName(selectedProject.projectManagerId) }}</p>
+                                      <p class="text-xs text-gray-500 dark:text-gray-400">Project Manager</p>
+                                  </div>
+                              </div>
+                          </div>
+                          <span [class]="getStatusBadgeClass(selectedProject.overallStatus?.color)">{{ selectedProject.overallStatus?.label }}</span>
+                      </div>
+
+                      <div class="mt-6">
+                          <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">Overall Progress</h3>
+                          <div class="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
+                              <div [class]="getProgressBarColorClass(selectedProject.overallStatus?.color)" class="h-2 rounded-full transition-all duration-500" [style.width.%]="selectedProject.overallProgress"></div>
+                          </div>
+                      </div>
+
+                      <div class="mt-8 space-y-4">
+                          <div *ngFor="let stage of selectedProject.stages" class="bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                              <div (click)="toggleStageSection(stage)" class="p-4 flex justify-between items-center cursor-pointer">
+                                  <div>
+                                      <h4 class="font-semibold text-lg text-gray-800 dark:text-gray-100">{{ stage.name }}</h4>
+                                      <div class="mt-2 w-32">
+                                        <div class="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
+                                            <div [class]="getProgressBarColorClass(stage.status?.color)" class="h-2 rounded-full" [style.width.%]="stage.progress"></div>
+                                        </div>
+                                      </div>
+                                  </div>
+                                  <div class="flex items-center gap-4">
+                                      <span [class]="getStatusBadgeClass(stage.status?.color)">{{ stage.status?.label }}</span>
+                                      <div class="transform transition-transform" [class.rotate-180]="stage.isOpen">
+                                        <span [innerHTML]="getIcon('chevronDown')"></span>
+                                      </div>
+                                  </div>
+                              </div>
+
+                              <div *ngIf="stage.isOpen" class="p-4 border-t border-gray-200 dark:border-gray-700">
+                                  <h5 class="font-semibold text-gray-700 dark:text-gray-300 mb-3">Tasks</h5>
+                                  <div class="space-y-3">
+                                      <div *ngFor="let task of stage.tasks" class="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-md" [class.opacity-60]="!stage.assignedTeamMemberIds.includes(currentUser?.id || '')">
+                                          <div class="flex items-center gap-3">
+                                              <input type="checkbox" [checked]="task.isCompleted" [disabled]="!stage.assignedTeamMemberIds.includes(currentUser?.id || '')" (change)="toggleTask(task)" class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50">
+                                              <p class="text-gray-800 dark:text-gray-200" [class.line-through]="task.isCompleted" [class.text-gray-500]="task.isCompleted">{{ task.name }}</p>
+                                          </div>
+                                          <div class="flex items-center gap-4">
+                                              <p class="text-sm text-gray-500 dark:text-gray-400">{{ task.startDate }} - {{ task.endDate }}</p>
+                                              <span [class]="getStatusBadgeClass(getTaskStatus(task).color)">{{ getTaskStatus(task).label }}</span>
+                                          </div>
+                                      </div>
+                                  </div>
+
+                                  <h5 class="font-semibold text-gray-700 dark:text-gray-300 mt-6 mb-3">Assigned Personnel</h5>
+                                  <div class="flex items-center -space-x-2 p-3 bg-white dark:bg-gray-800 rounded-md">
+                                      <img *ngFor="let uid of stage.assignedTeamMemberIds" [src]="getUserAvatar(uid)" [title]="getUserName(uid)" class="w-8 h-8 rounded-full object-cover ring-2 ring-white dark:ring-gray-800">
+                                      <p *ngIf="stage.assignedTeamMemberIds.length === 0" class="text-sm text-gray-500 ml-2">No one assigned</p>
+                                  </div>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+                  <ng-template #noProjectSelected>
+                      <div class="h-full flex items-center justify-center">
+                          <p class="text-gray-500 dark:text-gray-400 text-lg">Select a project</p>
+                      </div>
+                  </ng-template>
+              </div>
+          </div>
+
+          <!-- VIEW: PLACEHOLDER PAGES -->
+          <div *ngIf="['profile', 'settings', 'notifications', 'messages'].includes(currentView)" class="p-6 md:p-8">
+              <h1 class="text-3xl font-bold text-gray-800 dark:text-white capitalize">{{ currentView }}</h1>
+              <div class="mt-8 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+                  <p class="text-gray-600 dark:text-gray-300">This section is under construction.</p>
+              </div>
+          </div>
+      </div>
+  </main>
+</div>

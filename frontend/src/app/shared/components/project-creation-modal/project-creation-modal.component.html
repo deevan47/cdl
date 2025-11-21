@@ -1,0 +1,104 @@
+  <!-- ...existing code... -->
+<div *ngIf="showModal" 
+     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 modal-backdrop"
+     (click)="onBackdropClick($event)">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl" (click)="$event.stopPropagation()">
+    <div class="p-6 border-b dark:border-gray-700">
+      <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+        Create New {{ getPlatformTitle() }} Project
+      </h3>
+    </div>
+
+    <form [formGroup]="projectForm" (ngSubmit)="onSubmit()" class="p-6 space-y-6">
+      <!-- Project Name -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Project Name
+        </label>
+        <input type="text" 
+               formControlName="name"
+               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+               placeholder="Enter project name">
+        <div *ngIf="projectForm.get('name')?.invalid && projectForm.get('name')?.touched" 
+             class="text-red-500 text-xs mt-1">
+          Project name is required and must be at least 3 characters
+        </div>
+      </div>
+
+<!-- Project Manager -->
+<div>
+  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+    Project Manager
+  </label>
+  <select formControlName="projectManagerId"
+          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+    <option value="">Select Project Manager</option>
+    <option *ngFor="let manager of availableManagers" [value]="manager.id">
+      {{ manager.name }} - {{ manager.email }}
+    </option>
+  </select>
+  <div *ngIf="projectForm.get('projectManagerId')?.invalid && projectForm.get('projectManagerId')?.touched" 
+       class="text-red-500 text-xs mt-1">
+    Project manager is required
+  </div>
+</div>
+
+      <!-- Deadline -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Project Deadline
+        </label>
+        <input type="date" 
+               formControlName="deadline"
+               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+        <div *ngIf="projectForm.get('deadline')?.invalid && projectForm.get('deadline')?.touched" 
+             class="text-red-500 text-xs mt-1">
+          Project deadline is required
+        </div>
+      </div>
+
+      <!-- Scenario -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Project Scenario
+        </label>
+        <input type="text" 
+               formControlName="scenario"
+               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+               placeholder="Describe the project scenario">
+      </div>
+
+      <!-- Template Preview -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Project Stages Template
+        </label>
+        <div class="bg-gray-50 dark:bg-gray-700 rounded-md p-4">
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+            This project will include the following stages:
+          </p>
+          <ul class="list-disc list-inside space-y-1">
+            <li *ngFor="let stage of getStageTemplates()" 
+                class="text-sm text-gray-700 dark:text-gray-300">
+              {{ stage }}
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Form Actions -->
+      <div class="flex justify-end gap-3 pt-4 border-t dark:border-gray-700">
+        <button type="button"
+                (click)="closeModal()"
+                class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 transition">
+          Cancel
+        </button>
+        <button type="submit"
+                [disabled]="!projectForm.valid"
+                class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition">
+          Create Project
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

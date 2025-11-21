@@ -1,0 +1,186 @@
+<div class="flex h-screen bg-gray-100 dark:bg-gray-950 transition-colors duration-300">
+  <!-- Sidebar -->
+  <div class="w-64 bg-white dark:bg-gray-900 border-r dark:border-gray-700 flex flex-col">
+    <div class="p-6 border-b dark:border-gray-700">
+      <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Admin Dashboard</h2>
+    </div>
+
+    <nav class="flex-1 p-4 space-y-2">
+      <button (click)="navigateToSection('dashboard')" [class]="getSectionNavClass('dashboard')">
+        📊 Dashboard
+      </button>
+      <button (click)="navigateToSection('projects')" [class]="getSectionNavClass('projects')">
+        🚀 Projects
+      </button>
+      <button (click)="navigateToSection('users')" [class]="getSectionNavClass('users')">
+        👥 User Management
+      </button>
+      <button (click)="navigateToSection('settings')" [class]="getSectionNavClass('settings')">
+        ⚙️ Settings
+      </button>
+    </nav>
+
+    <div class="p-4 border-t dark:border-gray-700">
+      <button (click)="toggleDarkMode()"
+        class="w-full flex items-center justify-center px-4 py-2 text-gray-600 bg-gray-100 rounded-lg dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700">
+        {{ isDarkMode ? '☀️ Light' : '🌙 Dark' }} Mode
+      </button>
+      <a routerLink="/auth/logout"
+        class="w-full flex items-center justify-center mt-4 px-4 py-2 text-white bg-red-500 rounded-lg hover:bg-red-600 transition">Logout</a>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="flex-1 flex flex-col overflow-hidden">
+    <!-- Dashboard Section -->
+    <div *ngIf="currentSection === 'dashboard'" class="flex-1 overflow-y-auto">
+      <div class="p-6">
+        <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-8">Command Center</h1>
+
+        <!-- Platform Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div (click)="openProjectCreationModal('flame')"
+            class="p-8 rounded-xl bg-gradient-to-br from-orange-400 to-red-500 text-white shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+            <h2 class="text-4xl font-bold">FLAME</h2>
+            <p class="mt-2 text-lg opacity-80">Internal Creative Projects</p>
+          </div>
+
+          <div (click)="openProjectCreationModal('swayam')"
+            class="p-8 rounded-xl bg-gradient-to-br from-blue-400 to-indigo-500 text-white shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+            <h2 class="text-4xl font-bold">SWAYAM</h2>
+            <p class="mt-2 text-lg opacity-80">External Educational Courses</p>
+          </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6">
+          <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Dashboard Overview</h3>
+          <div class="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-300">
+            <span>Total Projects: <span class="font-bold text-gray-900 dark:text-white">{{ getStats().total
+                }}</span></span>
+            <span class="text-green-600 dark:text-green-400">Completed: <span class="font-bold">{{ getStats().completed
+                }}</span></span>
+            <span class="text-blue-600 dark:text-blue-400">In Progress: <span class="font-bold">{{ getStats().inProgress
+                }}</span></span>
+            <span class="text-red-600 dark:text-red-400">Lagging: <span class="font-bold">{{ getStats().lagging
+                }}</span></span>
+          </div>
+        </div>
+
+        <!-- Project List -->
+        <div class="space-y-4">
+          <div *ngFor="let project of filteredProjects" (click)="selectProject(project)"
+            class="p-4 rounded-lg bg-gray-50 dark:bg-gray-700/50 cursor-pointer hover:shadow-lg transition-shadow">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div [class]="getPlatformDotClass(project.platform)"></div>
+                <p class="font-semibold text-gray-800 dark:text-gray-100">{{ project.name }}</p>
+              </div>
+              <span [class]="getStatusBadgeClass(project.status)">{{ project.status }}</span>
+            </div>
+            <div class="mt-3">
+              <div class="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
+                <div [class]="getProgressBarClass(project.status)" [style.width.%]="project.overallProgress"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Projects Section -->
+    <div *ngIf="currentSection === 'projects'" class="flex-1 overflow-y-auto">
+      <div class="p-6">
+        <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-8">Project Management</h1>
+
+        <!-- Platform Navigation -->
+        <div class="flex gap-4 mb-6">
+          <button (click)="navigateTo('home')" [class]="getNavClass('home')">
+            All Projects
+          </button>
+          <button (click)="navigateTo('flame')" [class]="getNavClass('flame')">
+            FLAME Projects
+          </button>
+          <button (click)="navigateTo('swayam')" [class]="getNavClass('swayam')">
+            SWAYAM Projects
+          </button>
+        </div>
+
+        <!-- Platform Workspace View -->
+        <div class="flex h-full overflow-hidden">
+          <!-- Project List Sidebar -->
+          <div class="w-1/3 border-r dark:border-gray-700 flex flex-col">
+            <div class="p-4 border-b dark:border-gray-700 flex justify-between items-center">
+              <h2 class="text-2xl font-bold capitalize" [class]="getPlatformTextClass(currentView)">{{ currentView }}
+                Projects</h2>
+              <button (click)="createNewProject(currentView)"
+                class="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-white bg-blue-500 rounded-md hover:bg-blue-600 transition">
+                ➕ Add Project
+              </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto">
+              <div *ngFor="let project of filteredProjects" (click)="selectProject(project)"
+                [class]="getProjectItemClass(project)">
+                <div class="flex justify-between items-center">
+                  <p class="font-semibold text-gray-800 dark:text-gray-100">{{ project.name }}</p>
+                  <span [class]="getStatusBadgeClass(project.status)">{{ project.status }}</span>
+                </div>
+                <div class="mt-2">
+                  <div class="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
+                    <div [class]="getProgressBarClass(project.status)" [style.width.%]="project.overallProgress"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Project Detail View -->
+          <div class="flex-1 bg-white dark:bg-gray-800 overflow-y-auto">
+            <app-project-detail *ngIf="selectedProject" [project]="selectedProject"
+              [availableManagers]="availableManagers" (projectUpdated)="onProjectUpdated($event)"
+              (projectDeleted)="onProjectDeleted($event)" (taskModalRequested)="openTaskModal($event)">
+            </app-project-detail>
+
+            <div *ngIf="!selectedProject" class="h-full flex items-center justify-center">
+              <p class="text-gray-500 dark:text-gray-400 text-lg">Select or add a project</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Users Section -->
+    <div *ngIf="currentSection === 'users'" class="flex-1 overflow-y-auto">
+      <div class="p-6">
+        <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-8">Team Management</h1>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+          <p class="text-gray-600 dark:text-gray-400">Team management functionality will be implemented here.</p>
+          <p class="text-gray-500 dark:text-gray-500 text-sm mt-2">Features: Add team members, assign roles, manage
+            permissions.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Section -->
+    <div *ngIf="currentSection === 'settings'" class="flex-1 overflow-y-auto">
+      <div class="p-6">
+        <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-8">Settings</h1>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+          <p class="text-gray-600 dark:text-gray-400">System settings and configuration will be implemented here.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Project Creation Modal -->
+<app-project-creation-modal *ngIf="showProjectCreationModal" [platform]="selectedPlatformForCreation"
+  [availableManagers]="availableManagers" (projectCreated)="onProjectCreated($event)"
+  (modalClosed)="closeProjectCreationModal()">
+</app-project-creation-modal>
+
+<!-- Task Modal -->
+<app-task-modal *ngIf="showTaskModal" [stageId]="selectedStageId" (taskCreated)="onTaskCreated()"
+  (modalClosed)="closeTaskModal()">
+</app-task-modal>
