@@ -22,6 +22,7 @@ export class UserManagementComponent implements OnInit {
     this.userForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(2)]],
       email: ['', [Validators.required, Validators.email]],
+      password: [''], // Optional for edit, required for create (handled in template/logic)
       role: ['', Validators.required],
       avatar: ['']
     });

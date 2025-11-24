@@ -1,45 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-
-// Interfaces to match your prototype data structure
-interface Task {
-  id: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-  isCompleted: boolean;
-}
-
-interface Stage {
-  id: string;
-  name: string;
-  isOpen: boolean;
-  assignedTeamMemberIds: string[];
-  tasks: Task[];
-  // Computed properties
-  progress?: number;
-  status?: { label: string; color: string };
-}
-
-interface Project {
-  id: string;
-  name: string;
-  platform: 'flame' | 'swayam';
-  scenario: string;
-  projectManagerId: string;
-  updates: any[];
-  stages: Stage[];
-  // Computed properties
-  overallProgress?: number;
-  overallStatus?: { label: string; color: string };
-}
-
-interface User {
-  id: string;
-  name: string;
-  role: string;
-  avatar: string;
-}
+import { Router } from '@angular/router';
+import { ProjectService } from '../../shared/services/project.service';
+import { Project, ProjectStatus } from '../../shared/models/project.model';
+import { User } from '../../shared/models/user.model';
+import { AuthService } from '../../shared/services/auth.service';
 
 @Component({
   selector: 'app-user-dashboard',
@@ -49,29 +14,22 @@ interface User {
 export class UserDashboardComponent implements OnInit {
   // State variables
   isDarkMode = false;
-  isSidebarCollapsed = false;
   currentView: 'home' | 'flame' | 'swayam' | 'profile' | 'settings' | 'notifications' | 'messages' = 'home';
-  
+
   // Data
   currentUser: User | null = null;
-  projects: Project[] = [];
-  userProjects: Project[] = []; // Filtered projects relevant to user
+  allProjects: Project[] = [];
+  managedProjects: Project[] = [];
+  assignedProjects: Project[] = [];
   selectedProject: Project | null = null;
 
-  // Mock Constants
-  readonly TEAM_MEMBERS: User[] = [
-    { id: 'u1', name: 'Varsha Kumar', role: 'Lead Designer', avatar: 'https://i.pravatar.cc/150?u=varsha' },
-    { id: 'u2', name: 'Praharshini Kumar', role: 'Project Manager', avatar: 'https://i.pravatar.cc/150?u=praharshini' },
-    { id: 'u3', name: 'Siddhant Salve', role: 'Lead Developer', avatar: 'https://i.pravatar.cc/150?u=siddhant' },
-    { id: 'u4', name: 'Dipraj More', role: 'QA Engineer', avatar: 'https://i.pravatar.cc/150?u=dipraj' },
-    { id: 'u5', name: 'Shweta Kumari', role: 'Content Strategist', avatar: 'https://i.pravatar.cc/150?u=shweta' },
-    { id: 'u6', name: 'Aryan Sharma', role: 'Jr. Developer', avatar: 'https://i.pravatar.cc/150?u=aryan' },
-  ];
+  // Assignment UI
+  availableUsers: User[] = [];
+  showAssignmentModal = false;
+  selectedStageForAssignment: any = null;
+  selectedUsersForAssignment: string[] = [];
 
-  readonly CURRENT_USER_ID = 'u3'; // Simulating Siddhant Salve logged in
-  readonly TODAY = new Date('2025-10-06T00:00:00');
-
-  // Icons from your prototype
+  // Icons
   private ICONS_SVG: { [key: string]: string } = {
     home: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>`,
     user: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`,
@@ -83,55 +41,98 @@ export class UserDashboardComponent implements OnInit {
     moon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`,
     chevronLeft: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-gray-600 dark:text-gray-300"><polyline points="15 18 9 12 15 6"></polyline></svg>`,
     chevronRight: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-gray-600 dark:text-gray-300"><polyline points="9 18 15 12 9 6"></polyline></svg>`,
-    chevronDown: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-gray-500"><polyline points="6 9 12 15 18 9"></polyline></svg>`
+    chevronDown: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-gray-500"><polyline points="6 9 12 15 18 9"></polyline></svg>`,
+    arrowLeft: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>`
   };
 
-  constructor(private sanitizer: DomSanitizer) { }
+  constructor(
+    private sanitizer: DomSanitizer,
+    private projectService: ProjectService,
+    private router: Router,
+    private authService: AuthService
+  ) { }
 
-  ngOnInit() {
-    // 1. Simulate Login
-    this.currentUser = this.TEAM_MEMBERS.find(u => u.id === this.CURRENT_USER_ID) || null;
-    
-    // 2. Load Mock Data (Same as your prototype)
-    this.projects = [
-        {id:'p1',name:'Project Phoenix',platform:'flame',scenario:'3D From Scratch',projectManagerId:'u2',updates:[{id:'up1',authorId:'u2',timestamp:'2025-10-01T10:00:00Z',message:'Initial kickoff complete. All systems go.',urgency:'green'},{id:'up2',authorId:'u3',timestamp:'2025-10-04T14:30:00Z',message:'Development environment for render farm is set up.',urgency:'green'},],stages:[{id:'s1-1',name:'Pre-Production',isOpen:true, assignedTeamMemberIds:['u1','u5'],tasks:[{id:'t1-1-1',name:'Research & Moodboarding',startDate:'2025-09-15',endDate:'2025-09-25',isCompleted:true},{id:'t1-1-2',name:'Concept Art',startDate:'2025-09-26',endDate:'2025-10-05',isCompleted:true},{id:'t1-1-3',name:'Finalize Scripts',startDate:'2025-10-06',endDate:'2025-10-15',isCompleted:false},]},{id:'s1-2',name:'Production',isOpen:true, assignedTeamMemberIds:['u3'],tasks:[{id:'t1-2-1',name:'3D Modeling',startDate:'2025-10-16',endDate:'2025-10-30',isCompleted:false},{id:'t1-2-2',name:'Texturing & Shading',startDate:'2025-11-01',endDate:'2025-11-10',isCompleted:false},]},{id:'s1-3',name:'Post-Production',isOpen:true, assignedTeamMemberIds:['u4'],tasks:[{id:'t1-3-1',name:'Rendering',startDate:'2025-11-11',endDate:'2025-11-20',isCompleted:false},{id:'t1-3-2',name:'Compositing & VFX',startDate:'2025-11-21',endDate:'2025-11-30',isCompleted:false},{id:'t1-3-3',name:'Final Review',startDate:'2025-12-01',endDate:'2025-12-05',isCompleted:false},]},]},
-        {id:'p2',name:'Crimson Cascade',platform:'flame',scenario:'Animated Short',projectManagerId:'u2',updates:[],stages:[{id:'s2-1',name:'Pre-Production',isOpen:true, assignedTeamMemberIds:['u5'],tasks:[{id:'t2-1-1',name:'Storyboarding',startDate:'2025-09-01',endDate:'2025-09-10',isCompleted:true},{id:'t2-1-2',name:'Animatic',startDate:'2025-09-11',endDate:'2025-09-20',isCompleted:true},]},{id:'s2-2',name:'Production',isOpen:true, assignedTeamMemberIds:['u1','u3'],tasks:[{id:'t2-2-1',name:'Character Animation',startDate:'2025-09-21',endDate:'2025-10-04',isCompleted:true},]},{id:'s2-3',name:'Post-Production',isOpen:true, assignedTeamMemberIds:[],tasks:[{id:'t2-3-1',name:'Sound Design',startDate:'2025-10-15',endDate:'2025-10-25',isCompleted:false},]},]},
-        {id:'p3',name:'Quantum Computing Fundamentals',platform:'swayam',scenario:'Expert Led Course',projectManagerId:'u2',updates:[{id:'up3',authorId:'u4',timestamp:'2025-10-02T18:00:00Z',message:'Initial module review passed QA.',urgency:'green'},],stages:[{id:'s3-1',name:'Production',isOpen:true, assignedTeamMemberIds:['u3','u5'],tasks:[{id:'t3-1-1',name:'Module 1: Filming',startDate:'2025-09-20',endDate:'2025-09-30',isCompleted:true},{id:'t3-1-2',name:'Module 2: Filming',startDate:'2025-10-01',endDate:'2025-10-10',isCompleted:false},]},{id:'s3-2',name:'Post-Production',isOpen:true, assignedTeamMemberIds:['u4'],tasks:[{id:'t3-2-1',name:'Module 1: Editing & Graphics',startDate:'2025-10-01',endDate:'2025-10-15',isCompleted:false},{id:'t3-2-2',name:'Module 2: Editing & Graphics',startDate:'2025-10-16',endDate:'2025-10-30',isCompleted:false},{id:'t3-2-3',name:'Final QA Pass',startDate:'2025-11-01',endDate:'2025-11-05',isCompleted:false},]},]},
-        {id:'p4',name:'Advanced AI Architectures',platform:'swayam',scenario:'University Collaboration',projectManagerId:'u2',updates:[],stages:[{id:'s4-1',name:'Production',isOpen:true, assignedTeamMemberIds:['u3'],tasks:[{id:'t4-1-1',name:'Curriculum Finalization',startDate:'2025-08-01',endDate:'2025-08-15',isCompleted:true},{id:'t4-1-2',name:'Guest Speaker Filming',startDate:'2025-08-16',endDate:'2025-08-30',isCompleted:true},]},{id:'s4-2',name:'Post-Production',isOpen:true, assignedTeamMemberIds:[],tasks:[{id:'t4-2-1',name:'Transcription & Subtitles',startDate:'2025-09-01',endDate:'2025-09-15',isCompleted:true},{id:'t4-2-2',name:'Platform Integration',startDate:'2025-09-16',endDate:'2025-09-25',isCompleted:true},]},]},
-        {id:'p5',name:'Mobile App UX/UI Design',platform:'swayam',scenario:'Beginner Workshop',projectManagerId:'u2',updates:[],stages:[{id:'s5-1',name:'Production',isOpen:true, assignedTeamMemberIds:['u1'],tasks:[{id:'t5-1-1',name:'Design Asset Creation',startDate:'2025-11-01',endDate:'2025-11-20',isCompleted:false},{id:'t5-1-2',name:'Interactive Prototype Build',startDate:'2025-11-21',endDate:'2025-12-10',isCompleted:false},]},{id:'s5-2',name:'Post-Production',isOpen:true, assignedTeamMemberIds:['u6'],tasks:[{id:'t5-2-1',name:'User Testing Sessions',startDate:'2025-12-11',endDate:'2025-12-20',isCompleted:false},]},]}
-    ];
-
-    // 3. Calculate Health (This runs your Prototype logic)
-    this.calculateAllProjectsHealth();
-    
-    // 4. Filter for current user (Simulating backend filter)
-    this.userProjects = this.projects.filter(p => p.stages.some(s => s.assignedTeamMemberIds.includes(this.CURRENT_USER_ID)));
-    
-    console.log('Initialized Dashboard with', this.userProjects.length, 'projects');
+  logout() {
+    this.authService.logout();
+    this.router.navigateByUrl('/auth/login');
   }
 
-  // --- LOGIC FROM PROTOTYPE TRANSFERRED TO ANGULAR ---
+  ngOnInit() {
+    this.loadUser();
+    this.loadAvailableUsers();
+  }
+
+  loadUser() {
+    this.authService.currentUser.subscribe(user => {
+      if (user) {
+        this.currentUser = user.user ? user.user : user;
+        this.loadProjects();
+      } else {
+        this.router.navigate(['/auth/login']);
+      }
+    });
+  }
+
+  loadProjects() {
+    if (!this.currentUser) return;
+
+    // Load ALL projects for transparency as requested
+    this.projectService.getAllProjectsForDashboard().subscribe({
+      next: (projects) => {
+        this.allProjects = projects;
+        this.managedProjects = projects.filter(p => p.projectManager?.id === this.currentUser?.id);
+
+        // For transparency, show ALL other projects in "My Projects" (or Team Projects)
+        // This ensures users see projects even if not explicitly assigned yet
+        this.assignedProjects = projects.filter(p => p.projectManager?.id !== this.currentUser?.id);
+
+        // Default to showing all projects in the list
+        // this.filteredProjects = this.projects; // This line was removed as filteredProjects is not defined in the original code.
+        this.calculateAllProjectsHealth();
+      },
+      error: (err) => console.error('Error loading projects:', err)
+    });
+  }
+
+  loadAvailableUsers() {
+    this.projectService.getAvailableManagers().subscribe({
+      next: (users) => {
+        this.availableUsers = users;
+        console.log('Loaded available users for assignment:', this.availableUsers.length);
+      },
+      error: (err) => console.error('Failed to load users', err)
+    });
+  }
+
+  splitProjects() {
+    if (!this.currentUser) {
+      return;
+    }
+
+    // Managed Projects: Where user is the Project Manager
+    this.managedProjects = this.allProjects.filter(p => {
+      const isManager = p.projectManager?.id === this.currentUser?.id;
+      return isManager;
+    });
+
+    // Assigned Projects: Show all other projects for transparency
+    this.assignedProjects = this.allProjects.filter(p => {
+      return p.projectManager?.id !== this.currentUser?.id;
+    });
+  }
+
+  // --- UI Actions ---
 
   getIcon(name: string): SafeHtml {
-    // This bypasses the security warning so your icons show up
     return this.sanitizer.bypassSecurityTrustHtml(this.ICONS_SVG[name] || '');
   }
 
-  navigateTo(page: any, projectId: string | null = null) {
-    this.currentView = page;
+  navigateTo(view: string, projectId?: string) {
     if (projectId) {
-        this.selectedProject = this.projects.find(p => p.id === projectId) || null;
-    } else {
-        // If navigating to a platform page, auto-select the first project if none selected
-        if (page === 'flame' || page === 'swayam') {
-            const platformProjects = this.userProjects.filter(p => p.platform === page);
-            if (platformProjects.length > 0 && (!this.selectedProject || this.selectedProject.platform !== page)) {
-                this.selectedProject = platformProjects[0];
-            }
-        } else {
-            this.selectedProject = null;
-        }
+      this.router.navigate(['/projects', projectId]);
+      return;
     }
+    this.currentView = view as any;
   }
 
   selectProject(project: Project) {
@@ -147,131 +148,247 @@ export class UserDashboardComponent implements OnInit {
     }
   }
 
-  toggleSidebar() {
-    this.isSidebarCollapsed = !this.isSidebarCollapsed;
+  // --- Task Creation UI ---
+  showTaskCreationModal = false;
+  selectedStageForTask: any = null;
+  newTaskName = '';
+  newTaskStartDate = '';
+  newTaskEndDate = '';
+
+  openTaskCreationModal(stage: any) {
+    this.selectedStageForTask = stage;
+    this.newTaskName = '';
+    this.newTaskStartDate = '';
+    this.newTaskEndDate = '';
+    this.showTaskCreationModal = true;
   }
 
-  toggleTask(task: Task) {
-    task.isCompleted = !task.isCompleted;
-    this.calculateAllProjectsHealth(); // Recalculate bars
+  closeTaskCreationModal() {
+    this.showTaskCreationModal = false;
+    this.selectedStageForTask = null;
   }
 
-  toggleStageSection(stage: Stage) {
+  createTask() {
+    if (!this.selectedStageForTask || !this.newTaskName || !this.newTaskStartDate || !this.newTaskEndDate) return;
+
+    const taskData = {
+      name: this.newTaskName,
+      startDate: new Date(this.newTaskStartDate),
+      endDate: new Date(this.newTaskEndDate),
+      isCompleted: false
+    };
+
+    this.projectService.addTaskToStage(this.selectedStageForTask.id, taskData).subscribe({
+      next: (task) => {
+        // Refresh project
+        this.loadProjects();
+        this.closeTaskCreationModal();
+      },
+      error: (err) => console.error('Failed to create task', err)
+    });
+  }
+
+  // --- Task Toggle ---
+
+  toggleTask(task: any) {
+    if (!this.canToggleTask(task)) return;
+
+    const updates = { isCompleted: !task.isCompleted };
+    this.projectService.updateTask(task.id, updates).subscribe({
+      next: (updatedTask) => {
+        task.isCompleted = updatedTask.isCompleted;
+        this.calculateAllProjectsHealth();
+      },
+      error: (err) => {
+        console.error('Failed to update task', err);
+        // Revert if failed
+        task.isCompleted = !task.isCompleted;
+      }
+    });
+  }
+
+  canToggleTask(task: any): boolean {
+    // PM can always toggle
+    if (this.selectedProject?.projectManager?.id === this.currentUser?.id) return true;
+
+    // Find stage for this task
+    const stage = this.selectedProject?.stages?.find(s => s.tasks?.some((t: any) => t.id === task.id));
+    if (!stage) return false;
+
+    // Check if stage is locked
+    if (this.isStageLocked(stage)) return false;
+
+    // Assigned users can toggle
+    return stage.assignedTeamMembers?.some((u: User) => u.id === this.currentUser?.id);
+  }
+
+  toggleStageSection(stage: any) {
+    if (this.isStageLocked(stage)) return;
     stage.isOpen = !stage.isOpen;
   }
 
+  isStageLocked(stage: any): boolean {
+    if (!this.selectedProject || !this.selectedProject.stages) return false;
+
+    const index = this.selectedProject.stages.findIndex(s => s.id === stage.id);
+    if (index <= 0) return false; // First stage always unlocked
+
+    // Check previous stage
+    const prevStage = this.selectedProject.stages[index - 1];
+    // Ideally check status, but for now check if all tasks are completed
+    // Or use the status from backend if reliable
+    // Let's use a simple check: is previous stage completed?
+    // If backend status is COMPLETED, then yes.
+    // If not, check tasks manually
+    if ((prevStage as any)['status']?.label === 'Completed') return false;
+
+    // Manual check
+    if (!prevStage.tasks || prevStage.tasks.length === 0) return false; // If no tasks, assume done? Or blocked? Let's say unlocked if empty for now to avoid deadlocks
+
+    const allCompleted = prevStage.tasks.every((t: any) => t.isCompleted);
+    return !allCompleted;
+  }
+
   getFilteredProjects(platform: string): Project[] {
-    return this.userProjects.filter(p => p.platform === platform);
+    // User requested: "in user if i click on flame it should show all flame projects not just a blank screen same as swayam"
+    // So we return ALL projects of that platform, regardless of assignment.
+    // Case-insensitive comparison to be safe
+    return this.allProjects.filter(p => p.platform.toLowerCase() === platform.toLowerCase());
   }
 
   getStats() {
     return {
-        total: this.userProjects.length,
-        completed: this.userProjects.filter(p => p.overallStatus?.label === 'Completed').length,
-        inProgress: this.userProjects.filter(p => ['In Progress', 'At-Risk'].includes(p.overallStatus?.label || '')).length,
-        lagging: this.userProjects.filter(p => p.overallStatus?.label === 'Lagging').length
+      total: this.allProjects.length,
+      completed: this.allProjects.filter(p => p.status === ProjectStatus.COMPLETED).length,
+      inProgress: this.allProjects.filter(p => p.status === ProjectStatus.IN_PROGRESS).length,
+      lagging: this.allProjects.filter(p => p.status === ProjectStatus.LAGGING).length
     };
   }
 
-  // --- HELPERS FOR DATA CALCULATION ---
-  
-  getTaskStatus(task: Task) {
-    const endDate = new Date(task.endDate + 'T23:59:59');
+  // --- Assignment Logic ---
+
+  openAssignmentModal(stage: any) {
+    this.selectedStageForAssignment = stage;
+    this.selectedUsersForAssignment = stage.assignedTeamMembers?.map((u: User) => u.id) || [];
+    this.showAssignmentModal = true;
+  }
+
+  closeAssignmentModal() {
+    this.showAssignmentModal = false;
+    this.selectedStageForAssignment = null;
+    this.selectedUsersForAssignment = [];
+  }
+
+  toggleUserSelection(userId: string) {
+    const index = this.selectedUsersForAssignment.indexOf(userId);
+    if (index > -1) {
+      this.selectedUsersForAssignment.splice(index, 1);
+    } else {
+      this.selectedUsersForAssignment.push(userId);
+    }
+  }
+
+  saveAssignments() {
+    if (!this.selectedStageForAssignment) return;
+
+    this.projectService.assignUsersToStage(this.selectedStageForAssignment.id, this.selectedUsersForAssignment).subscribe({
+      next: (updatedStage) => {
+        // Update local state
+        const stageIndex = this.selectedProject?.stages?.findIndex(s => s.id === updatedStage.id);
+        if (this.selectedProject && stageIndex !== undefined && stageIndex > -1) {
+          // Refresh project to get full user objects
+          this.loadProjects();
+        }
+        this.closeAssignmentModal();
+      },
+      error: (err) => console.error('Failed to assign users', err)
+    });
+  }
+
+  isUserAssigned(userId: string): boolean {
+    return this.selectedUsersForAssignment.includes(userId);
+  }
+
+  canEditStage(stage: any): boolean {
+    if (!this.currentUser) return false;
+    // PM can always edit
+    if (this.selectedProject?.projectManager?.id === this.currentUser.id) return true;
+    return false; // Only PM can edit structure (add tasks, assign users)
+  }
+
+  // --- Helpers ---
+
+  getTaskStatus(task: any) {
+    const endDate = new Date(task.endDate);
+    const today = new Date();
     if (task.isCompleted) return { label: 'Completed', color: 'green' };
-    if (endDate < this.TODAY) return { label: 'Overdue', color: 'red' };
-    const sevenDaysFromNow = new Date(this.TODAY);
-    sevenDaysFromNow.setDate(this.TODAY.getDate() + 7);
+    if (endDate < today) return { label: 'Overdue', color: 'red' };
+
+    const sevenDaysFromNow = new Date();
+    sevenDaysFromNow.setDate(today.getDate() + 7);
+
     if (endDate <= sevenDaysFromNow) return { label: 'At-Risk', color: 'yellow' };
     return { label: 'On Track', color: 'green' };
   }
 
   calculateAllProjectsHealth() {
-    const stageOrder = ['Pre-Production', 'Production', 'Post-Production'];
-    
-    this.projects.forEach(p => {
-        let hasLaggingStage = false;
-        let projectCompleted = true;
+    // Use backend values if available, or calculate locally
+    // For now, relying on backend 'overallProgress' and 'status'
+    this.allProjects.forEach(p => {
+      // Map backend status to UI colors
+      let color = 'blue';
+      if (p.status === ProjectStatus.COMPLETED) color = 'green';
+      if (p.status === ProjectStatus.LAGGING) color = 'red';
+      if (p.status === ProjectStatus.AT_RISK) color = 'yellow';
 
-        p.stages.sort((a, b) => stageOrder.indexOf(a.name) - stageOrder.indexOf(b.name));
+      (p as any)['overallStatus'] = { label: p.status, color };
 
-        p.stages.forEach(stage => {
-            // Calculate Stage Health
-            let completedTasks = stage.tasks.filter(t => t.isCompleted).length;
-            let totalTasks = stage.tasks.length;
-            let progress = totalTasks === 0 ? 100 : (completedTasks / totalTasks) * 100;
-            
-            let incompleteTasks = stage.tasks.filter(t => !t.isCompleted);
-            let isOverdue = false;
-            let isAtRisk = false;
-
-            if (progress < 100) {
-                projectCompleted = false;
-                incompleteTasks.forEach(task => {
-                    const status = this.getTaskStatus(task);
-                    if (status.label === 'Overdue') isOverdue = true;
-                    if (status.label === 'At-Risk') isAtRisk = true;
-                });
-            }
-
-            let status = { label: 'On Track', color: 'green' };
-            if (isOverdue) status = { label: 'Overdue', color: 'red' };
-            else if (isAtRisk) status = { label: 'At-Risk', color: 'yellow' };
-            else if (progress === 100) status = { label: 'Completed', color: 'green' };
-
-            if (hasLaggingStage && progress < 100) status = { label: 'Lagging', color: 'red' };
-            else if (status.label === 'Overdue') hasLaggingStage = true;
-
-            // Assign to stage
-            stage.progress = progress;
-            stage.status = status;
-        });
-
-        // Calculate Overall Project
-        const totalStageProgress = p.stages.reduce((acc, s) => acc + (s.progress || 0), 0);
-        p.overallProgress = p.stages.length ? totalStageProgress / p.stages.length : 0;
-        
-        let overallStatus = { label: 'In Progress', color: 'blue' };
-        if (projectCompleted) overallStatus = { label: 'Completed', color: 'green' };
-        else if (hasLaggingStage || p.stages.some(s => s.status?.label === 'Overdue')) overallStatus = { label: 'Lagging', color: 'red' };
-        else if (p.stages.some(s => s.status?.label === 'At-Risk')) overallStatus = { label: 'At-Risk', color: 'yellow' };
-
-        p.overallStatus = overallStatus;
+      // Stage status
+      p.stages?.forEach(stage => {
+        let sColor = 'blue';
+        // map stage status...
+        // Check tasks
+        if (stage.tasks && stage.tasks.length > 0) {
+          const allDone = stage.tasks.every((t: any) => t.isCompleted);
+          if (allDone) {
+            (stage as any)['status'] = { label: 'Completed', color: 'green' };
+          } else {
+            (stage as any)['status'] = { label: 'In Progress', color: 'blue' };
+          }
+        } else {
+          (stage as any)['status'] = { label: 'Pending', color: 'gray' };
+        }
+      });
     });
   }
 
-  // --- UI CLASS HELPERS ---
-  
   getStatusBadgeClass(color: string | undefined): string {
-    const classes: {[key: string]: string} = { 
-        green: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300', 
-        yellow: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300', 
-        red: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300', 
-        blue: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' 
+    const classes: { [key: string]: string } = {
+      green: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+      yellow: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+      red: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+      blue: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+      gray: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
     };
     return `px-2.5 py-0.5 text-xs font-medium rounded-full ${classes[color || 'blue']}`;
   }
 
   getProgressBarColorClass(color: string | undefined): string {
-    const classes: {[key: string]: string} = { 
-        green: 'bg-green-500', 
-        yellow: 'bg-yellow-500', 
-        red: 'bg-red-500', 
-        blue: 'bg-blue-500' 
+    const classes: { [key: string]: string } = {
+      green: 'bg-green-500',
+      yellow: 'bg-yellow-500',
+      red: 'bg-red-500',
+      blue: 'bg-blue-500',
+      gray: 'bg-gray-500'
     };
     return classes[color || 'blue'];
   }
-  
-  getUserAvatar(userId: string): string {
-      const u = this.TEAM_MEMBERS.find(x => x.id === userId);
-      return u ? u.avatar : '';
+
+  getUserAvatar(user: User | undefined): string {
+    return user?.avatar || 'assets/default-avatar.png';
   }
-  
-  getUserName(userId: string): string {
-    const u = this.TEAM_MEMBERS.find(x => x.id === userId);
-    return u ? u.name : '';
-  }
-  
-  getProjectManager(project: Project): User | undefined {
-      return this.TEAM_MEMBERS.find(u => u.id === project.projectManagerId);
+
+  getUserName(user: User | undefined): string {
+    return user?.name || 'Unknown';
   }
 }

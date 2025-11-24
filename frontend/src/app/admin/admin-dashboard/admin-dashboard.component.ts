@@ -2,6 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { ProjectService } from '../../shared/services/project.service';
 import { UserService } from '../../shared/services/user.service';
 import { Project, ProjectPlatform, ProjectStatus } from '../../shared/models/project.model';
+import { User } from '../../shared/models/user.model';
+import { AuthService } from '../../shared/services/auth.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -24,8 +27,20 @@ export class AdminDashboardComponent implements OnInit {
 
   constructor(
     private projectService: ProjectService,
-    private userService: UserService
+    private userService: UserService,
+    private authService: AuthService, // Added
+    private router: Router // Added
   ) { }
+
+  navigateToProject(projectId: string) {
+    console.log('Navigating to project:', projectId);
+    this.router.navigate(['/projects', projectId]);
+  }
+
+  logout() {
+    this.authService.logout();
+    this.router.navigateByUrl('/auth/login');
+  }
 
   ngOnInit() {
     this.loadProjects();
@@ -94,19 +109,28 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   onProjectCreated(projectData: any) {
+    console.log('onProjectCreated called with data:', projectData);
     this.projectService.createProject(projectData).subscribe({
       next: (project) => {
+        console.log('Project created successfully:', project);
         this.projects.unshift(project);
         this.selectedProject = project;
         this.filterProjects();
         this.closeProjectCreationModal();
       },
-      error: (error) => console.error('Error creating project:', error)
+      error: (error) => {
+        console.error('Error creating project:', error);
+        alert('Failed to create project: ' + (error.error?.message || error.message));
+      }
     });
   }
 
-  createNewProject(platform: ProjectPlatform) {
-    this.openProjectCreationModal(platform);
+  createNewProject(platform: ProjectPlatform | 'home') {
+    if (platform === 'home') {
+      this.openProjectCreationModal(ProjectPlatform.SWAYAM);
+    } else {
+      this.openProjectCreationModal(platform);
+    }
   }
 
   deleteProject(projectId: string) {
@@ -265,5 +289,98 @@ export class AdminDashboardComponent implements OnInit {
       ? (project.platform === ProjectPlatform.FLAME ? 'bg-orange-500/10' : 'bg-blue-500/10')
       : 'hover:bg-gray-100 dark:hover:bg-gray-800/50';
     return `${baseClasses} ${selectedClasses}`;
+  }
+  // --- User Management ---
+  showUserCreationModal = false;
+  isEditingUser = false;
+  editingUserId: string | null = null;
+  newUser = { name: '', email: '', password: '', role: 'user' };
+
+  loadAvailableUsers() {
+    this.projectService.getAvailableManagers().subscribe({
+      next: (users) => {
+        // Sort: Project Managers first, then Users
+        this.availableManagers = users.sort((a, b) => {
+          if (a.role === 'project_manager' && b.role !== 'project_manager') return -1;
+          if (a.role !== 'project_manager' && b.role === 'project_manager') return 1;
+          return 0;
+        });
+      },
+      error: (err) => console.error('Failed to load users', err)
+    });
+  }
+
+  openUserCreationModal() {
+    this.showUserCreationModal = true;
+    this.isEditingUser = false;
+    this.editingUserId = null;
+    this.newUser = { name: '', email: '', password: '', role: 'user' };
+  }
+
+  openEditUserModal(user: User) {
+    this.showUserCreationModal = true;
+    this.isEditingUser = true;
+    this.editingUserId = user.id;
+    this.newUser = {
+      name: user.name,
+      email: user.email,
+      password: '', // Don't show password
+      role: user.role
+    };
+  }
+
+  closeUserCreationModal() {
+    this.showUserCreationModal = false;
+    this.isEditingUser = false;
+    this.editingUserId = null;
+  }
+
+  saveUser() {
+    if (this.isEditingUser) {
+      this.updateUser();
+    } else {
+      this.createUser();
+    }
+  }
+
+  createUser() {
+    if (!this.newUser.name || !this.newUser.email || !this.newUser.password) return;
+
+    this.userService.createUser(this.newUser as any).subscribe({
+      next: (user) => {
+        console.log('User created:', user);
+        this.loadAvailableUsers(); // Reload to sort
+        this.closeUserCreationModal();
+      },
+      error: (err) => console.error('Error creating user:', err)
+    });
+  }
+
+  updateUser() {
+    if (!this.editingUserId || !this.newUser.name || !this.newUser.email) return;
+
+    const updateData: any = { ...this.newUser };
+    if (!updateData.password) delete updateData.password; // Don't update password if empty
+
+    this.userService.updateUser(this.editingUserId, updateData).subscribe({
+      next: (user) => {
+        console.log('User updated:', user);
+        this.loadAvailableUsers();
+        this.closeUserCreationModal();
+      },
+      error: (err) => console.error('Error updating user:', err)
+    });
+  }
+
+  deleteUser(userId: string) {
+    if (confirm('Are you sure you want to delete this user?')) {
+      this.userService.deleteUser(userId).subscribe({
+        next: () => {
+          console.log('User deleted');
+          this.loadAvailableUsers();
+        },
+        error: (err) => console.error('Error deleting user:', err)
+      });
+    }
   }
 }

@@ -1,0 +1,29 @@
+<div class="min-h-screen bg-gray-100 dark:bg-gray-950 p-6">
+    <button (click)="goBack()"
+        class="mb-4 flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 transition">
+        <span>←</span> Back to Dashboard
+    </button>
+
+    <div *ngIf="loading" class="flex justify-center items-center h-64">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    </div>
+
+    <div *ngIf="!loading && project" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+        <!-- We reuse the existing ProjectDetailComponent but we need to make sure it's exported/imported -->
+        <app-project-detail [project]="project" [availableManagers]="availableManagers"
+            [currentUser]="currentUser" (taskModalRequested)="openTaskModal($event)"></app-project-detail>
+
+        <div class="p-6 border-t border-gray-200 dark:border-gray-700">
+            <app-comments [projectId]="project.id"></app-comments>
+        </div>
+    </div>
+
+    <!-- Task Modal -->
+    <app-task-modal *ngIf="showTaskModal" [stageId]="selectedStageId" (taskCreated)="onTaskCreated()"
+        (modalClosed)="closeTaskModal()">
+    </app-task-modal>
+
+    <div *ngIf="!loading && !project" class="text-center text-red-500">
+        Project not found.
+    </div>
+</div>

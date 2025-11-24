@@ -17,6 +17,8 @@ import { UserManagementComponent } from './admin/admin-dashboard/user-management
 import { LoginComponent } from './auth/login/login.component';
 import { RegisterComponent } from './auth/register/register.component';
 import { AuthInterceptor } from './shared/interceptors/auth.interceptor';
+import { CommentsComponent } from './shared/components/comments/comments.component';
+import { ProjectPageComponent } from './user/project-page/project-page.component';
 
 @NgModule({
   declarations: [
@@ -28,7 +30,9 @@ import { AuthInterceptor } from './shared/interceptors/auth.interceptor';
     ProjectCreationModalComponent,
     LoginComponent,
     RegisterComponent,
-    UserManagementComponent
+    UserManagementComponent,
+    CommentsComponent,
+    ProjectPageComponent
   ],
   imports: [
     BrowserModule,

@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User, UserRole } from './entities/user.entity';
 import { Project } from '../projects/entities/project.entity';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class UsersService {
@@ -11,7 +12,7 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
-  ) {}
+  ) { }
 
   // --- LOGIN HELPER (Fixes the password issue) ---
   async findUserForLogin(email: string): Promise<User | null> {
@@ -19,7 +20,7 @@ export class UsersService {
     // Use QueryBuilder to explicitly add the hidden password column
     return this.usersRepository.createQueryBuilder('user')
       .where('user.email = :email', { email })
-      .addSelect('user.password') 
+      .addSelect('user.password')
       .getOne();
   }
 
@@ -61,6 +62,10 @@ export class UsersService {
 
   async create(userData: Partial<User>): Promise<User> {
     this.logger.log(`create: creating user email=${userData?.email}`);
+    if (userData.password) {
+      const salt = await bcrypt.genSalt(10);
+      userData.password = await bcrypt.hash(userData.password, salt);
+    }
     const user = this.usersRepository.create(userData);
     return this.usersRepository.save(user);
   }

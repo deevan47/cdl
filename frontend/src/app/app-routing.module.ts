@@ -4,6 +4,7 @@ import { LoginComponent } from './auth/login/login.component';
 import { RegisterComponent } from './auth/register/register.component';
 import { AdminDashboardComponent } from './admin/admin-dashboard/admin-dashboard.component';
 import { UserDashboardComponent } from './user/user-dashboard/user-dashboard.component';
+import { ProjectPageComponent } from './user/project-page/project-page.component';
 import { AuthGuard } from './shared/guards/auth.guard';
 import { RoleGuard } from './shared/guards/role.guard';
 
@@ -18,8 +19,8 @@ const routes: Routes = [
     path: 'admin',
     component: AdminDashboardComponent,
     canActivate: [AuthGuard, RoleGuard],
-    data: { 
-      roles: ['admin'] 
+    data: {
+      roles: ['admin']
     }
   },
 
@@ -29,16 +30,21 @@ const routes: Routes = [
     path: 'user',
     component: UserDashboardComponent,
     canActivate: [AuthGuard, RoleGuard],
-    data: { 
+    data: {
       roles: [
-        'project_manager', 
-        'research_associate', 
-        'animator_Specialist', 
-        'editor', 
-        'animator', 
+        'project_manager',
+        'research_associate',
+        'animator_Specialist',
+        'editor',
+        'animator',
         'assistant_administrator'
-      ] 
+      ]
     }
+  },
+  {
+    path: 'projects/:id',
+    component: ProjectPageComponent,
+    canActivate: [AuthGuard]
   }
 ];
 

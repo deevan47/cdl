@@ -18,6 +18,14 @@ export class ProjectsService {
     stage.assignedTeamMembers = users;
     return this.stagesRepository.save(stage);
   }
+
+  async assignUsersToTask(taskId: string, userIds: string[]): Promise<Task> {
+    const task = await this.tasksRepository.findOne({ where: { id: taskId }, relations: ['assignedTeamMembers'] });
+    if (!task) throw new NotFoundException(`Task with ID ${taskId} not found`);
+    const users = await this.usersRepository.find({ where: userIds.map(id => ({ id })) });
+    task.assignedTeamMembers = users;
+    return this.tasksRepository.save(task);
+  }
   private readonly logger = new Logger(ProjectsService.name);
 
   constructor(
@@ -84,12 +92,20 @@ export class ProjectsService {
   }
 
   async create(createProjectDto: CreateProjectDto): Promise<Project> {
+    this.logger.log(`create: Finding manager with ID ${createProjectDto.projectManagerId}`);
     // Find manager if provided
     let manager: User | null = null;
     if (createProjectDto.projectManagerId) {
       manager = await this.usersRepository.findOne({ where: { id: createProjectDto.projectManagerId } });
-      if (!manager) throw new NotFoundException(`Project manager not found`);
+      if (!manager) {
+        this.logger.warn(`create: Project manager with ID ${createProjectDto.projectManagerId} not found`);
+        throw new NotFoundException(`Project manager not found`);
+      }
+      this.logger.log(`create: Found manager ${manager.name}`);
+    } else {
+      this.logger.log('create: No project manager ID provided');
     }
+
     // If no manager, manager stays null (allowed by DB and entity)
     const project = this.projectsRepository.create({
       name: createProjectDto.name,
@@ -99,14 +115,15 @@ export class ProjectsService {
       projectManager: manager || null,
     });
     const savedProject = await this.projectsRepository.save(project);
+    this.logger.log(`create: Project saved with ID ${savedProject.id}, Manager: ${savedProject.projectManager?.id}`);
 
     // Create default stages based on project platform
-    const stages = this.createDefaultStages(savedProject.id, savedProject.platform);
+    const stages = this.createDefaultStages(savedProject, savedProject.platform);
     await this.stagesRepository.save(stages);
     return this.findOne(savedProject.id);
   }
 
-  private createDefaultStages(projectId: string, platform: ProjectPlatform): ProjectStage[] {
+  private createDefaultStages(project: Project, platform: ProjectPlatform): ProjectStage[] {
     // Platform-specific templates
     let stageNames: StageName[] = [];
     if (platform === ProjectPlatform.FLAME) {
@@ -119,9 +136,9 @@ export class ProjectsService {
     }
 
     return stageNames.map((name) => {
-      return new ProjectStage({
+      return this.stagesRepository.create({
         name,
-        project: { id: projectId } as Project,
+        project: project,
         isOpen: true,
         progress: 0,
         status: StageStatus.ON_TRACK,
@@ -170,11 +187,50 @@ export class ProjectsService {
       await this.calculateStageHealth(stage);
     }
 
-    const totalProgress = project.stages.reduce((sum, stage) => sum + stage.progress, 0);
-    const averageProgress = totalProgress / project.stages.length;
+    // Weighted Progress Calculation
+    let totalProgress = 0;
+    let totalWeight = 0;
+
+    if (project.platform === ProjectPlatform.SWAYAM) {
+      // Swayam: Production (40%), Post-Production (60%)
+      for (const stage of project.stages) {
+        if (stage.name === StageName.PRODUCTION) {
+          totalProgress += stage.progress * 0.4;
+          totalWeight += 0.4;
+        } else if (stage.name === StageName.POST_PRODUCTION) {
+          totalProgress += stage.progress * 0.6;
+          totalWeight += 0.6;
+        }
+      }
+    } else if (project.platform === ProjectPlatform.FLAME) {
+      // Flame: Pre (30%), Prod (20%), Post (50%)
+      for (const stage of project.stages) {
+        if (stage.name === StageName.PRE_PRODUCTION) {
+          totalProgress += stage.progress * 0.3;
+          totalWeight += 0.3;
+        } else if (stage.name === StageName.PRODUCTION) {
+          totalProgress += stage.progress * 0.2;
+          totalWeight += 0.2;
+        } else if (stage.name === StageName.POST_PRODUCTION) {
+          totalProgress += stage.progress * 0.5;
+          totalWeight += 0.5;
+        }
+      }
+    } else {
+      // Default: Equal weighting
+      const weight = 1 / project.stages.length;
+      for (const stage of project.stages) {
+        totalProgress += stage.progress * weight;
+        totalWeight += weight;
+      }
+    }
+
+    // Normalize if weights don't add up to 1 (e.g. missing stages)
+    // If totalWeight is 0 (no matching stages), progress is 0
+    const finalProgress = totalWeight > 0 ? (totalProgress / totalWeight) : 0;
 
     let status = ProjectStatus.IN_PROGRESS;
-    if (averageProgress >= 100) {
+    if (finalProgress >= 100) {
       status = ProjectStatus.COMPLETED;
     } else if (project.stages.some(stage => stage.status === StageStatus.OVERDUE)) {
       status = ProjectStatus.LAGGING;
@@ -182,12 +238,12 @@ export class ProjectsService {
       status = ProjectStatus.AT_RISK;
     }
 
-    project.overallProgress = averageProgress;
+    project.overallProgress = parseFloat(finalProgress.toFixed(2));
     project.status = status;
 
     await this.projectsRepository.save(project);
 
-    return { progress: averageProgress, status };
+    return { progress: project.overallProgress, status };
   }
 
   private async calculateStageHealth(stage: ProjectStage): Promise<void> {
@@ -252,14 +308,18 @@ export class ProjectsService {
       const projects = await this.projectsRepository
         .createQueryBuilder('project')
         .leftJoinAndSelect('project.stages', 'stage')
+        .leftJoinAndSelect('stage.tasks', 'task')
+        .leftJoinAndSelect('task.assignedTeamMembers', 'taskMember')
         .leftJoinAndSelect('stage.assignedTeamMembers', 'member')
         .leftJoinAndSelect('project.projectManager', 'manager')
         .where('manager.id = :userId', { userId })
         .orWhere('member.id = :userId', { userId })
+        .orWhere('taskMember.id = :userId', { userId })
         .orderBy('project.createdAt', 'DESC')
         .getMany();
 
       this.logger.log(`getAssignedProjects: Found ${projects.length} projects for userId=${userId}`);
+      projects.forEach(p => this.logger.debug(`Found project: ${p.id}, Manager: ${p.projectManager?.id}`));
       return projects;
     } catch (err) {
       this.logger.error(`getAssignedProjects: Error fetching projects for userId=${userId}`, err?.stack || err?.message || err);

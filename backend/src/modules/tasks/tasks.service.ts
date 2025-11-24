@@ -2,13 +2,16 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Task } from './entities/task.entity';
+import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class TasksService {
   constructor(
     @InjectRepository(Task)
     private readonly taskRepository: Repository<Task>,
-  ) {}
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+  ) { }
 
   async findTasksByUserId(userId: string): Promise<Task[]> {
     return this.taskRepository
@@ -20,7 +23,7 @@ export class TasksService {
       .orderBy('task.endDate', 'ASC')
       .getMany();
   }
-  
+
   create(createTaskDto: Partial<Task>) {
     const task = this.taskRepository.create(createTaskDto as any);
     return this.taskRepository.save(task);
@@ -50,5 +53,26 @@ export class TasksService {
     const task = await this.findOne(id);
     await this.taskRepository.remove(task);
     return { deleted: true };
+  }
+
+  async assignUserToTask(taskId: string, userId: string): Promise<Task> {
+    const task = await this.findOne(taskId);
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID "${userId}" not found`);
+    }
+
+    // Initialize array if undefined
+    if (!task.assignedTeamMembers) {
+      task.assignedTeamMembers = [];
+    }
+
+    // Check if already assigned
+    if (!task.assignedTeamMembers.some(u => u.id === userId)) {
+      task.assignedTeamMembers.push(user);
+    }
+
+    return this.taskRepository.save(task);
   }
 }

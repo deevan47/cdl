@@ -12,6 +12,7 @@ import {
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { ProjectStage } from './project-stage.entity';
+import { Comment } from '../../comments/entities/comment.entity';
 
 // Enums to match your CHECK constraints
 export enum ProjectPlatform {
@@ -25,6 +26,7 @@ export enum ProjectStatus {
   AT_RISK = 'at_risk',
   LAGGING = 'lagging',
   COMPLETED = 'completed',
+  ARCHIVED = 'archived'
 }
 
 @Entity('projects')
@@ -68,16 +70,18 @@ export class Project {
   @JoinColumn({ name: 'project_manager_id' }) // This links the foreign key
   projectManager: User;
 
-  // This column is for storing the foreign key ID if needed, but is optional
-  @Column({ name: 'project_manager_id', nullable: true, insert: false, update: false })
-  projectManagerId: string;
-
   // --- This defines the other side of the relationship ---
-  @OneToMany(() => ProjectStage, (stage) => stage.project)
+  @OneToMany(() => ProjectStage, (stage) => stage.project, { cascade: true })
   stages: ProjectStage[];
+
+  @OneToMany(() => Comment, (comment) => comment.project, { cascade: true })
+  comments: Comment[];
 
   @Column({ type: 'date', nullable: true })
   deadline: Date;
+
+  @Column({ name: 'archived', type: 'boolean', default: false })
+  archived: boolean;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

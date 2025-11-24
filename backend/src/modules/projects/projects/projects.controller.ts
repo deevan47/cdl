@@ -28,6 +28,14 @@ export class ProjectsController {
     return this.projectsService.assignUsersToStage(stageId, body.userIds);
   }
 
+  @Put('tasks/:taskId/assign-users')
+  async assignUsersToTask(
+    @Param('taskId') taskId: string,
+    @Body() body: AssignUsersDto
+  ): Promise<any> {
+    return this.projectsService.assignUsersToTask(taskId, body.userIds);
+  }
+
   @Get()
   findAll(): Promise<Project[]> {
     return this.projectsService.findAll();

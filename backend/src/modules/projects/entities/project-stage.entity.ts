@@ -37,9 +37,6 @@ export class ProjectStage {
   @JoinColumn({ name: 'project_id' }) // Added: explicit join column
   project: Project;
 
-  @Column({ name: 'project_id', insert: false, update: false }) // Fixed: explicit column name
-  projectId: string;
-
   @OneToMany(() => Task, task => task.stage, { cascade: true, eager: true })
   tasks: Task[];
 

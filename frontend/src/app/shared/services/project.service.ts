@@ -55,4 +55,17 @@ export class ProjectService {
   getAssignedProjects(userId: string): Observable<Project[]> {
     return this.http.get<Project[]>(`${this.apiUrl}/user/${userId}`);
   }
+
+  // Added for transparency - fetch all projects
+  getAllProjectsForDashboard(): Observable<Project[]> {
+    return this.http.get<Project[]>(this.apiUrl);
+  }
+
+  assignUsersToStage(stageId: string, userIds: string[]): Observable<any> {
+    return this.http.put(`${this.apiUrl}/stages/${stageId}/assign-users`, { userIds });
+  }
+
+  updateTask(taskId: string, updates: any): Observable<any> {
+    return this.http.patch(`http://localhost:3000/tasks/${taskId}`, updates);
+  }
 }

@@ -20,7 +20,7 @@ export class ProjectCreationModalComponent implements OnInit {
   constructor(private fb: FormBuilder) {
     this.projectForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]],
-      projectManagerId: [''],
+      projectManagerId: ['', Validators.required],
       deadline: ['', Validators.required],
       scenario: ['']
     });
@@ -53,12 +53,23 @@ export class ProjectCreationModalComponent implements OnInit {
   }
 
   onSubmit() {
+    console.log('Form submitted, valid:', this.projectForm.valid);
+    console.log('Form values:', this.projectForm.value);
+    console.log('Form errors:', this.projectForm.errors);
+
     if (this.projectForm.valid) {
       const projectData = {
         ...this.projectForm.value,
         platform: this.platform
       };
+      console.log('Emitting project data:', projectData);
       this.projectCreated.emit(projectData);
+    } else {
+      console.error('Form is invalid. Errors:', this.projectForm.errors);
+      // Mark all fields as touched to show validation errors
+      Object.keys(this.projectForm.controls).forEach(key => {
+        this.projectForm.get(key)?.markAsTouched();
+      });
     }
   }
 

@@ -17,9 +17,14 @@ export class LoginComponent {
     console.log('[LOGIN_COMPONENT_INIT] LoginComponent initialized');
   }
 
+  ngOnInit() {
+    this.email = '';
+    this.password = '';
+  }
+
   submit() {
     console.log('[LOGIN_SUBMIT_START]', { email: this.email });
-    
+
     if (!this.email || !this.email.includes('@')) {
       this.error = 'Please enter a valid email address';
       return;
@@ -34,7 +39,7 @@ export class LoginComponent {
     this.isLoading = true;
 
     console.log('[LOGIN_API_CALL] Sending login request', { email: this.email, passwordLength: this.password.length });
-    
+
     this.auth.login(this.email, this.password).subscribe({
       next: (res) => {
         console.log('[LOGIN_API_SUCCESS] Received response', {

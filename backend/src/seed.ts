@@ -20,6 +20,7 @@ async function seed() {
                 password: await bcrypt.hash('admin123', 10),
                 role: 'admin',
                 isActive: true,
+                avatar: 'https://ui-avatars.com/api/?name=Manish+Dhawan&background=0D8ABC&color=fff'
             },
             {
                 name: 'sourabh',
@@ -27,6 +28,7 @@ async function seed() {
                 password: await bcrypt.hash('admin123', 10),
                 role: 'admin',
                 isActive: true,
+                avatar: 'https://ui-avatars.com/api/?name=Sourabh&background=0D8ABC&color=fff'
             },
             {
                 name: 'Varsha Kumar',
@@ -34,6 +36,7 @@ async function seed() {
                 password: await bcrypt.hash('user1234', 10),
                 role: 'research_associate',
                 isActive: true,
+                avatar: 'https://ui-avatars.com/api/?name=Varsha+Kumar&background=random'
             },
             {
                 name: 'Praharshini Kumar',
@@ -41,6 +44,7 @@ async function seed() {
                 password: await bcrypt.hash('user1234', 10),
                 role: 'research_associate',
                 isActive: true,
+                avatar: 'https://ui-avatars.com/api/?name=Praharshini+Kumar&background=random'
             },
             {
                 name: 'Siddhant Salve',
@@ -48,6 +52,7 @@ async function seed() {
                 password: await bcrypt.hash('user1234', 10),
                 role: 'animator',
                 isActive: true,
+                avatar: 'https://ui-avatars.com/api/?name=Siddhant+Salve&background=random'
             },
             {
                 name: 'Dipraj More',
@@ -55,6 +60,7 @@ async function seed() {
                 password: await bcrypt.hash('user1234', 10),
                 role: 'editor',
                 isActive: true,
+                avatar: 'https://ui-avatars.com/api/?name=Dipraj+More&background=random'
             },
             {
                 name: 'Shweta Kumari',
@@ -62,6 +68,7 @@ async function seed() {
                 password: await bcrypt.hash('user1234', 10),
                 role: 'assistant_administrator',
                 isActive: true,
+                avatar: 'https://ui-avatars.com/api/?name=Shweta+Kumari&background=random'
             },
         ];
 

@@ -1,22 +1,28 @@
 <div class="flex h-screen bg-gray-100 dark:bg-gray-950 transition-colors duration-300">
   <!-- Sidebar -->
   <div class="w-64 bg-white dark:bg-gray-900 border-r dark:border-gray-700 flex flex-col">
-    <div class="p-6 border-b dark:border-gray-700">
-      <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Admin Dashboard</h2>
+    <div class="p-6 border-b dark:border-gray-700 flex flex-col items-center">
+      <img src="assets/logo.png" alt="CDL Logo" class="h-12 w-auto mb-4 cursor-pointer"
+        (click)="navigateToSection('dashboard')">
+      <div class="text-center">
+        <h3 class="font-bold text-gray-800 dark:text-white">Manish Dhawan</h3>
+        <span
+          class="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full dark:bg-blue-900 dark:text-blue-300">Admin</span>
+      </div>
     </div>
 
     <nav class="flex-1 p-4 space-y-2">
       <button (click)="navigateToSection('dashboard')" [class]="getSectionNavClass('dashboard')">
-        📊 Dashboard
+        Dashboard
       </button>
       <button (click)="navigateToSection('projects')" [class]="getSectionNavClass('projects')">
-        🚀 Projects
+        Projects
       </button>
       <button (click)="navigateToSection('users')" [class]="getSectionNavClass('users')">
-        👥 User Management
+        User Management
       </button>
       <button (click)="navigateToSection('settings')" [class]="getSectionNavClass('settings')">
-        ⚙️ Settings
+        Settings
       </button>
     </nav>
 
@@ -25,8 +31,10 @@
         class="w-full flex items-center justify-center px-4 py-2 text-gray-600 bg-gray-100 rounded-lg dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700">
         {{ isDarkMode ? '☀️ Light' : '🌙 Dark' }} Mode
       </button>
-      <a routerLink="/auth/logout"
-        class="w-full flex items-center justify-center mt-4 px-4 py-2 text-white bg-red-500 rounded-lg hover:bg-red-600 transition">Logout</a>
+      <button (click)="logout()"
+        class="w-full flex items-center justify-center mt-4 px-4 py-2 text-white bg-red-500 rounded-lg hover:bg-red-600 transition">
+        <span [innerHTML]="'&#x1F6AA;'"></span> Logout
+      </button>
     </div>
   </div>
 
@@ -69,7 +77,7 @@
 
         <!-- Project List -->
         <div class="space-y-4">
-          <div *ngFor="let project of filteredProjects" (click)="selectProject(project)"
+          <div *ngFor="let project of filteredProjects" (click)="navigateToProject(project.id)"
             class="p-4 rounded-lg bg-gray-50 dark:bg-gray-700/50 cursor-pointer hover:shadow-lg transition-shadow">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-3">
@@ -113,14 +121,28 @@
             <div class="p-4 border-b dark:border-gray-700 flex justify-between items-center">
               <h2 class="text-2xl font-bold capitalize" [class]="getPlatformTextClass(currentView)">{{ currentView }}
                 Projects</h2>
+              <button *ngIf="currentSection === 'projects'" (click)="deleteProject(project.id)"
+                class="p-2 text-gray-400 hover:text-red-500 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                title="Delete Project">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                  stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
               <button (click)="createNewProject(currentView)"
                 class="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-white bg-blue-500 rounded-md hover:bg-blue-600 transition">
-                ➕ Add Project
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                  stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                </svg>
+                Add Project
               </button>
             </div>
 
             <div class="flex-1 overflow-y-auto">
-              <div *ngFor="let project of filteredProjects" (click)="selectProject(project)"
+              <div *ngFor="let project of filteredProjects" (click)="navigateToProject(project.id)"
                 [class]="getProjectItemClass(project)">
                 <div class="flex justify-between items-center">
                   <p class="font-semibold text-gray-800 dark:text-gray-100">{{ project.name }}</p>
@@ -155,9 +177,51 @@
       <div class="p-6">
         <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-8">Team Management</h1>
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-          <p class="text-gray-600 dark:text-gray-400">Team management functionality will be implemented here.</p>
-          <p class="text-gray-500 dark:text-gray-500 text-sm mt-2">Features: Add team members, assign roles, manage
-            permissions.</p>
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-semibold text-gray-800 dark:text-white">Users</h2>
+            <button (click)="openUserCreationModal()"
+              class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+              <span>➕</span> Add User
+            </button>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b dark:border-gray-700">
+                  <th class="p-3 text-sm font-semibold text-gray-600 dark:text-gray-300">Name</th>
+                  <th class="p-3 text-sm font-semibold text-gray-600 dark:text-gray-300">Email</th>
+                  <th class="p-3 text-sm font-semibold text-gray-600 dark:text-gray-300">Role</th>
+                  <th class="p-3 text-sm font-semibold text-gray-600 dark:text-gray-300">Status</th>
+                  <th class="p-3 text-sm font-semibold text-gray-600 dark:text-gray-300">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let user of availableManagers"
+                  class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                  <td class="p-3 text-gray-800 dark:text-gray-200">{{ user.name }}</td>
+                  <td class="p-3 text-gray-600 dark:text-gray-400">{{ user.email }}</td>
+                  <td class="p-3">
+                    <span
+                      class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+                      {{ user.role }}
+                    </span>
+                  </td>
+                  <td class="p-3">
+                    <span class="px-2 py-1 text-xs font-medium rounded-full" [class.bg-green-100]="user.isActive"
+                      [class.text-green-800]="user.isActive" [class.bg-red-100]="!user.isActive"
+                      [class.text-red-800]="!user.isActive">
+                      {{ user.isActive ? 'Active' : 'Inactive' }}
+                    </span>
+                  </td>
+                  <td class="p-3 flex gap-2">
+                    <button (click)="openEditUserModal(user)" class="text-blue-600 hover:text-blue-800">✏️</button>
+                    <button (click)="deleteUser(user.id)" class="text-red-600 hover:text-red-800">🗑️</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -184,3 +248,46 @@
 <app-task-modal *ngIf="showTaskModal" [stageId]="selectedStageId" (taskCreated)="onTaskCreated()"
   (modalClosed)="closeTaskModal()">
 </app-task-modal>
+
+<!-- User Creation Modal -->
+<div *ngIf="showUserCreationModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6">
+    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">{{ isEditingUser ? 'Edit User' : 'Add New User' }}
+    </h3>
+
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+        <input [(ngModel)]="newUser.name" type="text"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+        <input [(ngModel)]="newUser.email" type="email"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password {{ isEditingUser ?
+          '(Leave blank to keep)' : '' }}</label>
+        <input [(ngModel)]="newUser.password" type="password"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role</label>
+        <select [(ngModel)]="newUser.role"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="flex justify-end gap-3 mt-6">
+      <button (click)="closeUserCreationModal()"
+        class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition">Cancel</button>
+      <button (click)="saveUser()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+        {{ isEditingUser ? 'Update User' : 'Create User' }}
+      </button>
+    </div>
+  </div>
+</div>
