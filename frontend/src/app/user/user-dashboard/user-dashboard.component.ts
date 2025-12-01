@@ -14,6 +14,8 @@ import { AuthService } from '../../shared/services/auth.service';
 export class UserDashboardComponent implements OnInit {
   // State variables
   isDarkMode = false;
+  searchQuery = ''; // Search Query
+  selectedStatusFilter = 'all'; // Status Filter
   currentView: 'home' | 'flame' | 'swayam' | 'profile' | 'settings' | 'notifications' | 'messages' | 'project_details' = 'home';
 
   // Data
@@ -60,6 +62,16 @@ export class UserDashboardComponent implements OnInit {
   ngOnInit() {
     this.loadUser();
     this.loadAvailableUsers();
+
+    // Load Theme
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      this.isDarkMode = true;
+      document.documentElement.classList.add('dark');
+    } else {
+      this.isDarkMode = false;
+      document.documentElement.classList.remove('dark');
+    }
   }
 
   loadUser() {
@@ -88,7 +100,6 @@ export class UserDashboardComponent implements OnInit {
         this.assignedProjects = projects.filter(p => p.projectManager?.id !== this.currentUser?.id);
 
         // Default to showing all projects in the list
-        // this.filteredProjects = this.projects; // This line was removed as filteredProjects is not defined in the original code.
         this.calculateAllProjectsHealth();
       },
       error: (err) => console.error('Error loading projects:', err)
@@ -132,10 +143,7 @@ export class UserDashboardComponent implements OnInit {
 
   navigateTo(view: string, projectId?: string) {
     if (projectId) {
-      this.selectedProject = this.allProjects.find(p => p.id === projectId) || null;
-      if (this.selectedProject) {
-        this.currentView = 'project_details' as any;
-      }
+      this.router.navigate(['/projects', projectId]);
       return;
     }
     this.currentView = view as any;
@@ -148,15 +156,17 @@ export class UserDashboardComponent implements OnInit {
   }
 
   selectProject(project: Project) {
-    this.selectedProject = project;
+    this.router.navigate(['/projects', project.id]);
   }
 
   toggleDarkMode() {
     this.isDarkMode = !this.isDarkMode;
     if (this.isDarkMode) {
       document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
     }
   }
 
@@ -282,13 +292,70 @@ export class UserDashboardComponent implements OnInit {
   }
 
   getFilteredProjects(platform: string): Project[] {
-    if (!this.allProjects || !platform) {
-      return [];
+    if (!this.allProjects) return [];
+
+    let filtered = this.allProjects;
+
+    // Filter by Platform
+    if (platform) {
+      filtered = filtered.filter(p => p.platform && p.platform.toLowerCase() === platform.toLowerCase());
     }
-    // Return all projects for the platform, case-insensitive
-    const filtered = this.allProjects.filter(p => p.platform && p.platform.toLowerCase() === platform.toLowerCase());
-    console.log(`Filtered projects for ${platform}:`, filtered.length);
+
+    // Filter by Search Query
+    if (this.searchQuery) {
+      const query = this.searchQuery.toLowerCase();
+      filtered = filtered.filter(p =>
+        p.name.toLowerCase().includes(query) ||
+        p.projectManager?.name.toLowerCase().includes(query)
+      );
+    }
+
+    // Filter by Status
+    if (this.selectedStatusFilter !== 'all') {
+      filtered = filtered.filter(p => p.status === this.selectedStatusFilter);
+    }
+
     return filtered;
+  }
+
+  getManagedProjects(): Project[] {
+    let projects = this.managedProjects;
+
+    // Search
+    if (this.searchQuery) {
+      const query = this.searchQuery.toLowerCase();
+      projects = projects.filter(p =>
+        p.name.toLowerCase().includes(query) ||
+        p.projectManager?.name.toLowerCase().includes(query)
+      );
+    }
+
+    // Status
+    if (this.selectedStatusFilter !== 'all') {
+      projects = projects.filter(p => p.status === this.selectedStatusFilter);
+    }
+
+    return projects;
+  }
+
+  getAssignedProjects(): Project[] {
+    let projects = this.assignedProjects;
+
+    // Search
+    if (this.searchQuery) {
+      const query = this.searchQuery.toLowerCase();
+      projects = projects.filter(p =>
+        p.name.toLowerCase().includes(query) ||
+        p.projectManager?.name.toLowerCase().includes(query)
+      );
+    }
+
+    // Status
+    if (this.selectedStatusFilter !== 'all') {
+      projects = projects.filter(p => p.status === this.selectedStatusFilter);
+    }
+
+    return projects;
   }
 
   getStats() {

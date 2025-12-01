@@ -19,6 +19,7 @@ import { RegisterComponent } from './auth/register/register.component';
 import { AuthInterceptor } from './shared/interceptors/auth.interceptor';
 import { CommentsComponent } from './shared/components/comments/comments.component';
 import { ProjectPageComponent } from './user/project-page/project-page.component';
+import { DashboardWrapperComponent } from './dashboard-wrapper/dashboard-wrapper.component';
 
 @NgModule({
   declarations: [
@@ -32,7 +33,8 @@ import { ProjectPageComponent } from './user/project-page/project-page.component
     RegisterComponent,
     UserManagementComponent,
     CommentsComponent,
-    ProjectPageComponent
+    ProjectPageComponent,
+    DashboardWrapperComponent
   ],
   imports: [
     BrowserModule,

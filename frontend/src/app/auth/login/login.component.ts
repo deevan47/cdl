@@ -62,23 +62,10 @@ export class LoginComponent {
             console.log('[LOGIN_STORAGE] assignedProjects count:', ((res.assignedProjects && res.assignedProjects.length) || 0));
             console.log('[LOGIN_STORAGE] Token and user info saved to localStorage');
 
-            // --- ROLE-BASED NAVIGATION ---
-            // Check the user's role and navigate to the appropriate dashboard
-            const userRole = res.user.role;
-            // Determine if the user should be treated as a project manager for routing
-            const assignedProjects = JSON.parse(localStorage.getItem('assignedProjects') || '[]');
-            const isPmOnSomeProject = Array.isArray(assignedProjects) && assignedProjects.some((p: any) => p?.projectManager?.id === res.user.id);
-
-            if (userRole === 'admin') {
-              console.log(`[LOGIN_NAVIGATE] Role is '${userRole}'. Navigating to admin dashboard.`);
-              this.router.navigate(['/admin']);
-            } else if (userRole === 'project_manager' || isPmOnSomeProject) {
-              console.log(`[LOGIN_NAVIGATE] User is project manager (role or assigned). Navigating to PM/projects view.`);
-              this.router.navigate(['/user']);
-            } else {
-              console.log(`[LOGIN_NAVIGATE] Role is '${userRole}'. Navigating to user dashboard.`);
-              this.router.navigate(['/user']);
-            }
+            // --- UNIFIED NAVIGATION ---
+            // Navigate to the unified dashboard for all users
+            console.log(`[LOGIN_NAVIGATE] Login successful. Navigating to unified dashboard.`);
+            this.router.navigate(['/dashboard']);
 
             this.isLoading = false;
 

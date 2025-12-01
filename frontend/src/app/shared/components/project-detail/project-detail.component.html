@@ -138,30 +138,32 @@
       <!-- Stage Content -->
       <div *ngIf="stage.isOpen" class="p-4 border-t border-gray-200 dark:border-gray-700">
 
-        <!-- Assigned Personnel (Moved to Top) -->
+        <!-- Assigned Personnel -->
         <div class="mb-6">
           <h5 class="font-semibold text-gray-700 dark:text-gray-300 mb-3">Assigned Stage Personnel</h5>
           <div class="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-md">
             <div class="flex items-center -space-x-2">
               <ng-container *ngFor="let user of stage.assignedTeamMembers">
-                <div
-                  class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-sm ring-2 ring-white dark:ring-gray-800"
-                  [title]="user.name">
-                  <img *ngIf="user.avatar" [src]="user.avatar" class="w-full h-full rounded-full object-cover">
-                  <span *ngIf="!user.avatar">{{ user.name.charAt(0) }}</span>
+                <div class="relative group/avatar">
+                  <div
+                    class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-sm ring-2 ring-white dark:ring-gray-800"
+                    [title]="user.name">
+                    <img *ngIf="user.avatar" [src]="user.avatar" class="w-full h-full rounded-full object-cover">
+                    <span *ngIf="!user.avatar">{{ user.name.charAt(0) }}</span>
+                  </div>
+                  <!-- Remove Button (Only in Edit Mode) -->
+                  <button *ngIf="isEditMode && canManageProject" (click)="removeUserFromStage(stage, user)"
+                    class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover/avatar:opacity-100 transition-opacity"
+                    title="Remove user">
+                    &times;
+                  </button>
                 </div>
               </ng-container>
               <span *ngIf="stage.assignedTeamMembers.length === 0" class="text-sm text-gray-500 ml-2">No one
                 assigned</span>
             </div>
 
-            <select *ngIf="canManageProject" (change)="assignUserToStage(stage, $event)"
-              class="text-sm bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500">
-              <option value="">Assign user...</option>
-              <option *ngFor="let user of availableManagers" [value]="user.id">
-                {{ user.name }}
-              </option>
-            </select>
+            <!-- Assign Dropdown: Removed (Background assignment only) -->
           </div>
         </div>
 
@@ -169,7 +171,9 @@
         <div class="mb-6">
           <div class="flex justify-between items-center mb-4">
             <h5 class="font-semibold text-gray-700 dark:text-gray-300">Tasks</h5>
-            <button *ngIf="canManageProject" (click)="openTaskModal(stage.id)"
+
+            <!-- Add Task: Only visible in Edit Mode -->
+            <button *ngIf="isEditMode && canManageProject" (click)="openTaskModal(stage.id)"
               class="flex items-center gap-1 px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 transition">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
                 stroke="currentColor">
@@ -185,6 +189,7 @@
 
               <!-- Left: Checkbox & Name -->
               <div class="flex items-center gap-3 flex-1">
+                <!-- Checkbox: Disabled unless user has permission (handled by canEditTask) -->
                 <input type="checkbox" [checked]="task.isCompleted" [disabled]="!canEditTask(task)"
                   (change)="toggleTaskCompletion(task)"
                   class="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 disabled:opacity-50 cursor-pointer">
@@ -220,19 +225,27 @@
                   </span>
                 </ng-template>
 
-                <!-- Avatars -->
+                <!-- Avatars (Restored) -->
                 <div class="flex items-center -space-x-2">
                   <ng-container *ngFor="let user of task.assignedTeamMembers">
-                    <div
-                      class="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center text-xs ring-2 ring-white dark:ring-gray-800"
-                      [title]="user.name">
-                      <img *ngIf="user.avatar" [src]="user.avatar" class="w-full h-full rounded-full object-cover">
-                      <span *ngIf="!user.avatar">{{ user.name.charAt(0) }}</span>
+                    <div class="relative group/avatar">
+                      <div
+                        class="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center text-xs ring-2 ring-white dark:ring-gray-800"
+                        [title]="user.name">
+                        <img *ngIf="user.avatar" [src]="user.avatar" class="w-full h-full rounded-full object-cover">
+                        <span *ngIf="!user.avatar">{{ user.name.charAt(0) }}</span>
+                      </div>
+                      <!-- Remove Button (Only in Edit Mode) -->
+                      <button *ngIf="isEditMode && canManageProject" (click)="removeUserFromTask(task, user)"
+                        class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-3 h-3 flex items-center justify-center text-[10px] opacity-0 group-hover/avatar:opacity-100 transition-opacity"
+                        title="Remove user">
+                        &times;
+                      </button>
                     </div>
                   </ng-container>
                 </div>
 
-                <!-- Assign Dropdown (Visible only in Edit Mode for Admin/PM) -->
+                <!-- Assign Dropdown (Restored: Visible only in Edit Mode) -->
                 <select *ngIf="isEditMode && canManageProject"
                   (change)="assignUserToTask(task, $event); onFieldChange()"
                   class="text-xs bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 rounded focus:ring-blue-500 focus:border-blue-500 py-1 pl-2 pr-6">

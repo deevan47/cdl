@@ -1,6 +1,6 @@
 import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { Project, ProjectStage, Task } from '../../models/project.model';
+import { Project, ProjectStage, Task, ProjectStatus } from '../../models/project.model';
 import { User } from '../../models/user.model';
 import { ProjectService } from '../../services/project.service';
 import { AuthService } from '../../services/auth.service';
@@ -68,11 +68,107 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
 
   toggleEditMode() {
     if (this.isEditMode) {
-      this.saveChanges();
-      this.isEditMode = false;
+      // Saving changes
+      this.saveProjectChanges();
+    }
+    this.isEditMode = !this.isEditMode;
+  }
+
+  saveProjectChanges() {
+    if (!this.project) return;
+
+    // Recalculate progress before saving
+    this.calculateProgress();
+
+    this.projectService.updateProject(this.project.id, this.project).subscribe({
+      next: (updatedProject) => {
+        this.project = updatedProject;
+        this.hasUnsavedChanges = false;
+        // Ensure we exit edit mode if called directly
+        if (this.isEditMode) this.isEditMode = false;
+      },
+      error: (err) => console.error('Error saving project:', err)
+    });
+  }
+
+  calculateProgress() {
+    if (!this.project || !this.project.stages) return;
+
+    let totalProgress = 0;
+    const platform = this.project.platform.toLowerCase();
+
+    // Define Weights
+    let weights: { [key: string]: number } = {};
+    if (platform === 'flame') {
+      weights = {
+        'pre-production': 30,
+        'production': 40,
+        'post-production': 30
+      };
+    } else if (platform === 'swayam') {
+      weights = {
+        'production': 50,
+        'post-production': 50
+      };
     } else {
-      this.isEditMode = true;
-      this.hasUnsavedChanges = false;
+      // Default equal weights if unknown
+      const count = this.project.stages.length;
+      this.project.stages.forEach(s => weights[s.name.toLowerCase()] = 100 / count);
+    }
+
+    // Calculate
+    this.project.stages.forEach(stage => {
+      const stageName = stage.name.toLowerCase();
+      const weight = weights[stageName] || 0;
+
+      if (stage.tasks && stage.tasks.length > 0) {
+        const completedTasks = stage.tasks.filter(t => t.isCompleted).length;
+        const stageProgress = (completedTasks / stage.tasks.length) * 100;
+
+        // Update stage progress
+        stage.progress = Math.round(stageProgress);
+
+        // Add weighted contribution
+        totalProgress += (stageProgress / 100) * weight;
+      } else {
+        // If no tasks, assume 0% for that stage (or keep existing if manual)
+        stage.progress = 0;
+      }
+    });
+
+    this.project.overallProgress = Math.round(totalProgress);
+    this.updateProjectStatus();
+  }
+
+  updateProjectStatus() {
+    if (!this.project) return;
+
+    // Determine status based on stages/tasks
+    // Hierarchy: Lagging > At Risk > In Progress > Completed
+
+    let hasLagging = false;
+    let hasAtRisk = false;
+    let hasInProgress = false;
+
+    this.project.stages.forEach(stage => {
+      if (stage.tasks) {
+        stage.tasks.forEach(task => {
+          const status = this.getTaskStatus(task);
+          if (status.label === 'Overdue') hasLagging = true;
+          if (status.label === 'At-Risk') hasAtRisk = true;
+          if (!task.isCompleted) hasInProgress = true;
+        });
+      }
+    });
+
+    if (hasLagging) {
+      this.project.status = ProjectStatus.LAGGING;
+    } else if (hasAtRisk) {
+      this.project.status = ProjectStatus.AT_RISK;
+    } else if (hasInProgress) {
+      this.project.status = ProjectStatus.IN_PROGRESS;
+    } else {
+      this.project.status = ProjectStatus.COMPLETED;
     }
   }
 
@@ -168,27 +264,58 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
 
   assignUserToStage(stage: ProjectStage, event: any) {
     const userId = event.target.value;
-    if (userId && this.project) {
-      const currentIds = stage.assignedTeamMembers.map(u => u.id);
-      if (currentIds.includes(userId)) {
-        event.target.value = '';
-        return;
+    if (!userId || !this.project) return;
+
+    // Check for duplicates
+    if (stage.assignedTeamMembers.some(u => u.id === userId)) {
+      alert('User is already assigned to this stage.');
+      event.target.value = ''; // Reset dropdown
+      return;
+    }
+
+    const newUserIds = [...stage.assignedTeamMembers.map(u => u.id), userId];
+
+    // Optimistic update
+    const user = this.availableManagers.find(u => u.id === userId);
+    if (user) {
+      stage.assignedTeamMembers.push(user);
+    }
+
+    this.projectService.assignUsersToStage(stage.id, newUserIds).subscribe({
+      next: () => {
+        console.log('User assigned to stage');
+        this.hasUnsavedChanges = true;
+      },
+      error: (err) => {
+        console.error('Error assigning user to stage:', err);
+        // Revert on error
+        stage.assignedTeamMembers = stage.assignedTeamMembers.filter(u => u.id !== userId);
       }
-      const newUserIds = [...currentIds, userId];
-      this.projectService.assignUsersToStage(stage.id, newUserIds)
-        .subscribe({
-          next: (updatedStage) => {
-            if (this.project) {
-              const stageIndex = this.project.stages.findIndex(s => s.id === stage.id);
-              if (stageIndex !== -1) {
-                const user = this.availableManagers.find(u => u.id === userId);
-                if (user) stage.assignedTeamMembers.push(user);
-              }
-            }
-            event.target.value = '';
-          },
-          error: (error) => console.error('Error assigning user to stage:', error)
-        });
+    });
+
+    event.target.value = ''; // Reset dropdown
+  }
+
+  removeUserFromStage(stage: ProjectStage, user: User) {
+    if (!this.project) return;
+    if (confirm(`Are you sure you want to remove ${user.name} from this stage?`)) {
+      const newUserIds = stage.assignedTeamMembers.filter(u => u.id !== user.id).map(u => u.id);
+
+      // Optimistic update
+      const originalMembers = [...stage.assignedTeamMembers];
+      stage.assignedTeamMembers = stage.assignedTeamMembers.filter(u => u.id !== user.id);
+
+      this.projectService.assignUsersToStage(stage.id, newUserIds).subscribe({
+        next: () => {
+          console.log('User removed from stage');
+          this.hasUnsavedChanges = true;
+        },
+        error: (err) => {
+          console.error('Error removing user from stage:', err);
+          // Revert
+          stage.assignedTeamMembers = originalMembers;
+        }
+      });
     }
   }
 
@@ -203,12 +330,45 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
               if (stage) {
                 const taskIndex = stage.tasks.findIndex(t => t.id === task.id);
                 if (taskIndex !== -1) stage.tasks[taskIndex] = updatedTask;
+
+                // Auto-assign to stage if not already assigned
+                const isAlreadyAssigned = stage.assignedTeamMembers.some(u => u.id === userId);
+                if (!isAlreadyAssigned) {
+                  const newUserIds = [...stage.assignedTeamMembers.map(u => u.id), userId];
+                  this.projectService.assignUsersToStage(stage.id, newUserIds).subscribe({
+                    next: (updatedStage) => {
+                      // Update local stage members
+                      const user = this.availableManagers.find(u => u.id === userId);
+                      if (user) stage.assignedTeamMembers.push(user);
+                      console.log('Auto-assigned user to stage:', user?.name);
+                    },
+                    error: (err) => console.error('Error auto-assigning user to stage:', err)
+                  });
+                }
               }
             }
             event.target.value = '';
           },
           error: (error) => console.error('Error assigning user to task:', error)
         });
+    }
+  }
+
+  removeUserFromTask(task: Task, user: User) {
+    if (!this.project) return;
+    if (confirm(`Are you sure you want to remove ${user.name} from this task?`)) {
+      this.taskService.removeUserFromTask(task.id, user.id).subscribe({
+        next: (updatedTask) => {
+          if (this.project) {
+            const stage = this.project.stages.find(s => s.id === task.stageId);
+            if (stage) {
+              const taskIndex = stage.tasks.findIndex(t => t.id === task.id);
+              if (taskIndex !== -1) stage.tasks[taskIndex] = updatedTask;
+            }
+          }
+        },
+        error: (err) => console.error('Error removing user from task:', err)
+      });
     }
   }
 
@@ -225,7 +385,10 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
             const taskIndex = stage.tasks.findIndex(t => t.id === task.id);
             if (taskIndex !== -1) stage.tasks[taskIndex] = updatedTask;
           }
-          this.projectService.calculateProjectHealth(this.project.id).subscribe();
+          // Recalculate locally for immediate feedback
+          this.calculateProgress();
+          // Also sync with backend if needed, but local calc is faster
+          // this.projectService.calculateProjectHealth(this.project.id).subscribe();
         }
       },
       error: (error) => console.error('Error updating task status:', error)
@@ -320,12 +483,20 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
   }
 
   canEditTask(task: Task): boolean {
-    if (!this.currentUser) return false;
-    // Admin and PM can always edit
-    if (this.currentUser.role === 'admin' || this.currentUser.id === this.project?.projectManager?.id) return true;
+    if (!this.currentUser || !this.project) return false;
 
-    // Assigned users can ONLY edit if they are assigned to the task
-    return task.assignedTeamMembers?.some(u => u.id === this.currentUser?.id) || false;
+    // Admin and PM can always edit
+    if (this.currentUser.role === 'admin' || this.currentUser.id === this.project.projectManagerId) {
+      return true;
+    }
+
+    // Users can edit if they are assigned to the STAGE of this task
+    const stage = this.project.stages.find(s => s.id === task.stageId);
+    if (stage) {
+      return stage.assignedTeamMembers.some(u => u.id === this.currentUser?.id);
+    }
+
+    return false;
   }
 
   get canManageProject(): boolean {

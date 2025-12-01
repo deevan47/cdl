@@ -24,6 +24,8 @@ export class AdminDashboardComponent implements OnInit {
   currentSection: 'dashboard' | 'projects' | 'users' | 'settings' = 'dashboard';
   showProjectCreationModal = false;
   selectedPlatformForCreation!: ProjectPlatform;
+  searchQuery = ''; // Search Query
+  selectedStatusFilter = 'all'; // Status Filter
 
   constructor(
     private projectService: ProjectService,
@@ -45,7 +47,16 @@ export class AdminDashboardComponent implements OnInit {
   ngOnInit() {
     this.loadProjects();
     this.loadAvailableManagers();
-    this.detectColorScheme();
+
+    // Load Theme
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      this.isDarkMode = true;
+      document.documentElement.classList.add('dark');
+    } else {
+      this.isDarkMode = false;
+      document.documentElement.classList.remove('dark');
+    }
   }
 
   loadProjects() {
@@ -72,11 +83,28 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   filterProjects() {
-    if (this.selectedPlatform === 'all') {
-      this.filteredProjects = this.projects;
-    } else {
-      this.filteredProjects = this.projects.filter(p => p.platform === this.selectedPlatform);
+    let filtered = this.projects;
+
+    // Filter by Platform
+    if (this.selectedPlatform !== 'all') {
+      filtered = filtered.filter(p => p.platform === this.selectedPlatform);
     }
+
+    // Filter by Search Query
+    if (this.searchQuery) {
+      const query = this.searchQuery.toLowerCase();
+      filtered = filtered.filter(p =>
+        p.name.toLowerCase().includes(query) ||
+        p.projectManager?.name.toLowerCase().includes(query)
+      );
+    }
+
+    // Filter by Status
+    if (this.selectedStatusFilter !== 'all') {
+      filtered = filtered.filter(p => p.status === this.selectedStatusFilter);
+    }
+
+    this.filteredProjects = filtered;
   }
 
   navigateTo(view: 'home' | 'flame' | 'swayam') {
@@ -191,8 +219,10 @@ export class AdminDashboardComponent implements OnInit {
     this.isDarkMode = !this.isDarkMode;
     if (this.isDarkMode) {
       document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
     }
   }
 

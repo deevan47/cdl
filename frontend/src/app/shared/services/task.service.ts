@@ -35,6 +35,10 @@ export class TaskService {
     return this.http.put<Task>(`${this.apiUrl}/${taskId}/assign-user/${userId}`, {});
   }
 
+  removeUserFromTask(taskId: string, userId: string): Observable<Task> {
+    return this.http.delete<Task>(`${this.apiUrl}/${taskId}/assign-user/${userId}`);
+  }
+
   updateTaskStatus(taskId: string, status: TaskStatus, isCompleted?: boolean): Observable<Task> {
     return this.http.put<Task>(`${this.apiUrl}/${taskId}/status`, { status, isCompleted });
   }

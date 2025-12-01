@@ -2,8 +2,7 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { LoginComponent } from './auth/login/login.component';
 import { RegisterComponent } from './auth/register/register.component';
-import { AdminDashboardComponent } from './admin/admin-dashboard/admin-dashboard.component';
-import { UserDashboardComponent } from './user/user-dashboard/user-dashboard.component';
+import { DashboardWrapperComponent } from './dashboard-wrapper/dashboard-wrapper.component';
 import { ProjectPageComponent } from './user/project-page/project-page.component';
 import { AuthGuard } from './shared/guards/auth.guard';
 import { RoleGuard } from './shared/guards/role.guard';
@@ -13,34 +12,17 @@ const routes: Routes = [
   { path: 'auth/login', component: LoginComponent },
   { path: 'auth/register', component: RegisterComponent },
 
-  // --- ADMIN PORTAL ---
-  // Only 'admin' role can access this
+  // Unified Dashboard Route
   {
-    path: 'admin',
-    component: AdminDashboardComponent,
-    canActivate: [AuthGuard, RoleGuard],
-    data: {
-      roles: ['admin']
-    }
+    path: 'dashboard',
+    component: DashboardWrapperComponent,
+    canActivate: [AuthGuard]
   },
 
-  // --- USER PORTAL ---
-  // All other roles access this
-  {
-    path: 'user',
-    component: UserDashboardComponent,
-    canActivate: [AuthGuard, RoleGuard],
-    data: {
-      roles: [
-        'project_manager',
-        'research_associate',
-        'animator_Specialist',
-        'editor',
-        'animator',
-        'assistant_administrator'
-      ]
-    }
-  },
+  // Legacy Redirects (Optional, but good for safety)
+  { path: 'admin', redirectTo: 'dashboard', pathMatch: 'full' },
+  { path: 'user', redirectTo: 'dashboard', pathMatch: 'full' },
+
   {
     path: 'projects/:id',
     component: ProjectPageComponent,
@@ -49,7 +31,7 @@ const routes: Routes = [
 ];
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
+  imports: [RouterModule.forRoot(routes, { useHash: true })],
   exports: [RouterModule]
 })
 export class AppRoutingModule { }

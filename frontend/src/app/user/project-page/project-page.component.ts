@@ -60,7 +60,7 @@ export class ProjectPageComponent implements OnInit {
     selectedStageId = '';
 
     goBack() {
-        this.router.navigate(['/user']);
+        this.router.navigate(['/dashboard']);
     }
 
     openTaskModal(stageId: string) {

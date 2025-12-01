@@ -84,4 +84,8 @@ export class ProjectCreationModalComponent implements OnInit {
       this.closeModal();
     }
   }
+
+  getTodayDate(): string {
+    return new Date().toISOString().split('T')[0];
+  }
 }
