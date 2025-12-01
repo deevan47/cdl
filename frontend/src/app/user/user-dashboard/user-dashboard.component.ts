@@ -14,7 +14,7 @@ import { AuthService } from '../../shared/services/auth.service';
 export class UserDashboardComponent implements OnInit {
   // State variables
   isDarkMode = false;
-  currentView: 'home' | 'flame' | 'swayam' | 'profile' | 'settings' | 'notifications' | 'messages' = 'home';
+  currentView: 'home' | 'flame' | 'swayam' | 'profile' | 'settings' | 'notifications' | 'messages' | 'project_details' = 'home';
 
   // Data
   currentUser: User | null = null;
@@ -79,6 +79,7 @@ export class UserDashboardComponent implements OnInit {
     // Load ALL projects for transparency as requested
     this.projectService.getAllProjectsForDashboard().subscribe({
       next: (projects) => {
+        console.log('Dashboard: Loaded all projects:', projects);
         this.allProjects = projects;
         this.managedProjects = projects.filter(p => p.projectManager?.id === this.currentUser?.id);
 
@@ -127,12 +128,23 @@ export class UserDashboardComponent implements OnInit {
     return this.sanitizer.bypassSecurityTrustHtml(this.ICONS_SVG[name] || '');
   }
 
+
+
   navigateTo(view: string, projectId?: string) {
     if (projectId) {
-      this.router.navigate(['/projects', projectId]);
+      this.selectedProject = this.allProjects.find(p => p.id === projectId) || null;
+      if (this.selectedProject) {
+        this.currentView = 'project_details' as any;
+      }
       return;
     }
     this.currentView = view as any;
+    this.selectedProject = null;
+  }
+
+  goBack() {
+    this.selectedProject = null;
+    this.currentView = 'home';
   }
 
   selectProject(project: Project) {
@@ -155,8 +167,18 @@ export class UserDashboardComponent implements OnInit {
   newTaskStartDate = '';
   newTaskEndDate = '';
 
-  openTaskCreationModal(stage: any) {
-    this.selectedStageForTask = stage;
+  openTaskCreationModal(stageOrId: any) {
+    if (typeof stageOrId === 'string') {
+      this.selectedStageForTask = this.selectedProject?.stages?.find(s => s.id === stageOrId);
+    } else {
+      this.selectedStageForTask = stageOrId;
+    }
+
+    if (!this.selectedStageForTask) {
+      console.error('Could not find stage for task creation');
+      return;
+    }
+
     this.newTaskName = '';
     this.newTaskStartDate = '';
     this.newTaskEndDate = '';
@@ -169,7 +191,17 @@ export class UserDashboardComponent implements OnInit {
   }
 
   createTask() {
-    if (!this.selectedStageForTask || !this.newTaskName || !this.newTaskStartDate || !this.newTaskEndDate) return;
+    console.log('Creating task...', {
+      stage: this.selectedStageForTask,
+      name: this.newTaskName,
+      start: this.newTaskStartDate,
+      end: this.newTaskEndDate
+    });
+
+    if (!this.selectedStageForTask || !this.selectedStageForTask.id || !this.newTaskName || !this.newTaskStartDate || !this.newTaskEndDate) {
+      console.error('Task creation failed: Missing required fields');
+      return;
+    }
 
     const taskData = {
       name: this.newTaskName,
@@ -250,10 +282,13 @@ export class UserDashboardComponent implements OnInit {
   }
 
   getFilteredProjects(platform: string): Project[] {
-    // User requested: "in user if i click on flame it should show all flame projects not just a blank screen same as swayam"
-    // So we return ALL projects of that platform, regardless of assignment.
-    // Case-insensitive comparison to be safe
-    return this.allProjects.filter(p => p.platform.toLowerCase() === platform.toLowerCase());
+    if (!this.allProjects || !platform) {
+      return [];
+    }
+    // Return all projects for the platform, case-insensitive
+    const filtered = this.allProjects.filter(p => p.platform && p.platform.toLowerCase() === platform.toLowerCase());
+    console.log(`Filtered projects for ${platform}:`, filtered.length);
+    return filtered;
   }
 
   getStats() {
@@ -350,13 +385,17 @@ export class UserDashboardComponent implements OnInit {
         // Check tasks
         if (stage.tasks && stage.tasks.length > 0) {
           const allDone = stage.tasks.every((t: any) => t.isCompleted);
-          if (allDone) {
+          const completedCount = stage.tasks.filter((t: any) => t.isCompleted).length;
+          (stage as any)['progress'] = stage.tasks.length > 0 ? (completedCount / stage.tasks.length) * 100 : 0;
+
+          if (allDone && stage.tasks.length > 0) {
             (stage as any)['status'] = { label: 'Completed', color: 'green' };
           } else {
             (stage as any)['status'] = { label: 'In Progress', color: 'blue' };
           }
         } else {
           (stage as any)['status'] = { label: 'Pending', color: 'gray' };
+          (stage as any)['progress'] = 0;
         }
       });
     });
@@ -382,6 +421,17 @@ export class UserDashboardComponent implements OnInit {
       gray: 'bg-gray-500'
     };
     return classes[color || 'blue'];
+  }
+
+  getProgressBarColorByPercentage(progress: number): string {
+    if (progress <= 25) return 'bg-red-500';
+    if (progress <= 50) return 'bg-orange-500';
+    if (progress <= 75) return 'bg-blue-500';
+    return 'bg-green-500';
+  }
+
+  getTodayDate(): string {
+    return new Date().toISOString().split('T')[0];
   }
 
   getUserAvatar(user: User | undefined): string {

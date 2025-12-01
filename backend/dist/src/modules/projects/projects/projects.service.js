@@ -192,12 +192,12 @@ let ProjectsService = ProjectsService_1 = class ProjectsService {
                     totalWeight += 0.3;
                 }
                 else if (stage.name === project_stage_entity_1.StageName.PRODUCTION) {
-                    totalProgress += stage.progress * 0.2;
-                    totalWeight += 0.2;
+                    totalProgress += stage.progress * 0.3;
+                    totalWeight += 0.3;
                 }
                 else if (stage.name === project_stage_entity_1.StageName.POST_PRODUCTION) {
-                    totalProgress += stage.progress * 0.5;
-                    totalWeight += 0.5;
+                    totalProgress += stage.progress * 0.4;
+                    totalWeight += 0.4;
                 }
             }
         }

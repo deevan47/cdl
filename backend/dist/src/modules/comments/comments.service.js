@@ -22,12 +22,19 @@ let CommentsService = class CommentsService {
         this.commentsRepository = commentsRepository;
     }
     async create(createCommentDto, user) {
-        const comment = this.commentsRepository.create({
-            ...createCommentDto,
-            user,
-            project: { id: createCommentDto.projectId }
-        });
-        return this.commentsRepository.save(comment);
+        console.log('CommentsService.create called with:', { createCommentDto, userId: user?.id });
+        try {
+            const comment = this.commentsRepository.create({
+                content: createCommentDto.content,
+                user,
+                project: { id: createCommentDto.projectId }
+            });
+            return await this.commentsRepository.save(comment);
+        }
+        catch (error) {
+            console.error('Error creating comment:', error);
+            throw new Error(`Failed to create comment: ${error.message}`);
+        }
     }
     async findByProject(projectId) {
         return this.commentsRepository.find({

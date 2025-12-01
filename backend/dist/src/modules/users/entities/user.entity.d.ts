@@ -1,6 +1,7 @@
 import { Project } from '../../projects/entities/project.entity';
 import { ProjectStage } from '../../projects/entities/project-stage.entity';
 import { Task } from '../../tasks/entities/task.entity';
+import { Comment } from '../../comments/entities/comment.entity';
 export declare enum UserRole {
     ADMIN = "admin",
     PROJECT_MANAGER = "project_manager",
@@ -21,6 +22,7 @@ export declare class User {
     managedProjects: Project[];
     assignedStages: ProjectStage[];
     assignedTasks: Task[];
+    comments: Comment[];
     createdAt: Date;
     updatedAt: Date;
 }

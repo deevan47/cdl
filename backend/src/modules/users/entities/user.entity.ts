@@ -2,6 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToMany, CreateDa
 import { Project } from '../../projects/entities/project.entity';
 import { ProjectStage } from '../../projects/entities/project-stage.entity';
 import { Task } from '../../tasks/entities/task.entity';
+import { Comment } from '../../comments/entities/comment.entity';
 
 export enum UserRole {
   ADMIN = 'admin',
@@ -44,6 +45,9 @@ export class User {
 
   @ManyToMany(() => Task, (task) => task.assignedTeamMembers)
   assignedTasks: Task[];
+
+  @OneToMany(() => Comment, (comment) => comment.user)
+  comments: Comment[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

@@ -351,8 +351,12 @@ export class AdminDashboardComponent implements OnInit {
         console.log('User created:', user);
         this.loadAvailableUsers(); // Reload to sort
         this.closeUserCreationModal();
+        alert('User created successfully!');
       },
-      error: (err) => console.error('Error creating user:', err)
+      error: (err) => {
+        console.error('Error creating user:', err);
+        alert('Failed to create user: ' + (err.error?.message || err.message));
+      }
     });
   }
 

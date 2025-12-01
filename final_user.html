@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en" class="">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Project Management Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .transform {
+            transition: transform 0.3s ease;
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+</head>
+<body class="bg-gray-100 dark:bg-gray-950">
+
+    <div id="app-root" class="flex h-screen font-sans transition-colors duration-300">
+        <!-- Sidebar will be rendered here -->
+        <div id="sidebar-container"></div>
+        <!-- Main content will be rendered here -->
+        <main id="main-content-container" class="flex-1 flex flex-col overflow-hidden">
+        </main>
+    </div>
+
+    <script>
+        // --- MOCK DATA & CONFIGURATION ---
+        const TEAM_MEMBERS = [
+            { id: 'u1', name: 'Varsha Kumar', role: 'Lead Designer', avatar: 'https://i.pravatar.cc/150?u=varsha' },
+            { id: 'u2', name: 'Praharshini Kumar', role: 'Project Manager', avatar: 'https://i.pravatar.cc/150?u=praharshini' },
+            { id: 'u3', name: 'Siddhant Salve', role: 'Lead Developer', avatar: 'https://i.pravatar.cc/150?u=siddhant' },
+            { id: 'u4', name: 'Dipraj More', role: 'QA Engineer', avatar: 'https://i.pravatar.cc/150?u=dipraj' },
+            { id: 'u5', name: 'Shweta Kumari', role: 'Content Strategist', avatar: 'https://i.pravatar.cc/150?u=shweta' },
+            { id: 'u6', name: 'Aryan Sharma', role: 'Jr. Developer', avatar: 'https://i.pravatar.cc/150?u=aryan' },
+        ];
+        const CURRENT_USER_ID = 'u3';
+        const TODAY = new Date('2025-10-06T00:00:00');
+        const initialProjects = [
+            {id:'p1',name:'Project Phoenix',platform:'flame',scenario:'3D From Scratch',projectManagerId:'u2',updates:[{id:'up1',authorId:'u2',timestamp:'2025-10-01T10:00:00Z',message:'Initial kickoff complete. All systems go.',urgency:'green'},{id:'up2',authorId:'u3',timestamp:'2025-10-04T14:30:00Z',message:'Development environment for render farm is set up.',urgency:'green'},],stages:[{id:'s1-1',name:'Pre-Production',isOpen:true, assignedTeamMemberIds:['u1','u5'],tasks:[{id:'t1-1-1',name:'Research & Moodboarding',startDate:'2025-09-15',endDate:'2025-09-25',isCompleted:!0},{id:'t1-1-2',name:'Concept Art',startDate:'2025-09-26',endDate:'2025-10-05',isCompleted:!0},{id:'t1-1-3',name:'Finalize Scripts',startDate:'2025-10-06',endDate:'2025-10-15',isCompleted:!1},]},{id:'s1-2',name:'Production',isOpen:true, assignedTeamMemberIds:['u3'],tasks:[{id:'t1-2-1',name:'3D Modeling',startDate:'2025-10-16',endDate:'2025-10-30',isCompleted:!1},{id:'t1-2-2',name:'Texturing & Shading',startDate:'2025-11-01',endDate:'2025-11-10',isCompleted:!1},]},{id:'s1-3',name:'Post-Production',isOpen:true, assignedTeamMemberIds:['u4'],tasks:[{id:'t1-3-1',name:'Rendering',startDate:'2025-11-11',endDate:'2025-11-20',isCompleted:!1},{id:'t1-3-2',name:'Compositing & VFX',startDate:'2025-11-21',endDate:'2025-11-30',isCompleted:!1},{id:'t1-3-3',name:'Final Review',startDate:'2025-12-01',endDate:'2025-12-05',isCompleted:!1},]},]},
+            {id:'p2',name:'Crimson Cascade',platform:'flame',scenario:'Animated Short',projectManagerId:'u2',updates:[],stages:[{id:'s2-1',name:'Pre-Production',isOpen:true, assignedTeamMemberIds:['u5'],tasks:[{id:'t2-1-1',name:'Storyboarding',startDate:'2025-09-01',endDate:'2025-09-10',isCompleted:!0},{id:'t2-1-2',name:'Animatic',startDate:'2025-09-11',endDate:'2025-09-20',isCompleted:!0},]},{id:'s2-2',name:'Production',isOpen:true, assignedTeamMemberIds:['u1','u3'],tasks:[{id:'t2-2-1',name:'Character Animation',startDate:'2025-09-21',endDate:'2025-10-04',isCompleted:!0},]},{id:'s2-3',name:'Post-Production',isOpen:true, assignedTeamMemberIds:[],tasks:[{id:'t2-3-1',name:'Sound Design',startDate:'2025-10-15',endDate:'2025-10-25',isCompleted:!1},]},]},
+            {id:'p3',name:'Quantum Computing Fundamentals',platform:'swayam',scenario:'Expert Led Course',projectManagerId:'u2',updates:[{id:'up3',authorId:'u4',timestamp:'2025-10-02T18:00:00Z',message:'Initial module review passed QA.',urgency:'green'},],stages:[{id:'s3-1',name:'Production',isOpen:true, assignedTeamMemberIds:['u3','u5'],tasks:[{id:'t3-1-1',name:'Module 1: Filming',startDate:'2025-09-20',endDate:'2025-09-30',isCompleted:!0},{id:'t3-1-2',name:'Module 2: Filming',startDate:'2025-10-01',endDate:'2025-10-10',isCompleted:!1},]},{id:'s3-2',name:'Post-Production',isOpen:true, assignedTeamMemberIds:['u4'],tasks:[{id:'t3-2-1',name:'Module 1: Editing & Graphics',startDate:'2025-10-01',endDate:'2025-10-15',isCompleted:!1},{id:'t3-2-2',name:'Module 2: Editing & Graphics',startDate:'2025-10-16',endDate:'2025-10-30',isCompleted:!1},{id:'t3-2-3',name:'Final QA Pass',startDate:'2025-11-01',endDate:'2025-11-05',isCompleted:!1},]},]},
+            {id:'p4',name:'Advanced AI Architectures',platform:'swayam',scenario:'University Collaboration',projectManagerId:'u2',updates:[],stages:[{id:'s4-1',name:'Production',isOpen:true, assignedTeamMemberIds:['u3'],tasks:[{id:'t4-1-1',name:'Curriculum Finalization',startDate:'2025-08-01',endDate:'2025-08-15',isCompleted:!0},{id:'t4-1-2',name:'Guest Speaker Filming',startDate:'2025-08-16',endDate:'2025-08-30',isCompleted:!0},]},{id:'s4-2',name:'Post-Production',isOpen:true, assignedTeamMemberIds:[],tasks:[{id:'t4-2-1',name:'Transcription & Subtitles',startDate:'2025-09-01',endDate:'2025-09-15',isCompleted:!0},{id:'t4-2-2',name:'Platform Integration',startDate:'2025-09-16',endDate:'2025-09-25',isCompleted:!0},]},]},
+            {id:'p5',name:'Mobile App UX/UI Design',platform:'swayam',scenario:'Beginner Workshop',projectManagerId:'u2',updates:[],stages:[{id:'s5-1',name:'Production',isOpen:true, assignedTeamMemberIds:['u1'],tasks:[{id:'t5-1-1',name:'Design Asset Creation',startDate:'2025-11-01',endDate:'2025-11-20',isCompleted:!1},{id:'t5-1-2',name:'Interactive Prototype Build',startDate:'2025-11-21',endDate:'2025-12-10',isCompleted:!1},]},{id:'s5-2',name:'Post-Production',isOpen:true, assignedTeamMemberIds:['u6'],tasks:[{id:'t5-2-1',name:'User Testing Sessions',startDate:'2025-12-11',endDate:'2025-12-20',isCompleted:!1},]},]}
+        ];
+
+        let state = {
+            isDarkMode: false,
+            isSidebarCollapsed: false,
+            currentPage: 'home',
+            projects: JSON.parse(JSON.stringify(initialProjects)),
+            pendingProjectId: null,
+            selectedProjectId: null
+        };
+
+        const currentUser = TEAM_MEMBERS.find(u => u.id === CURRENT_USER_ID);
+
+        const ICONS = {
+            home: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>`,
+            user: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`,
+            settings: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`,
+            bell: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>`,
+            message: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>`,
+            logout: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>`,
+            sun: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`,
+            moon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`,
+            chevronLeft: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-gray-600 dark:text-gray-300"><polyline points="15 18 9 12 15 6"></polyline></svg>`,
+            chevronRight: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-gray-600 dark:text-gray-300"><polyline points="9 18 15 12 9 6"></polyline></svg>`,
+            chevronDown: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-gray-500"><polyline points="6 9 12 15 18 9"></polyline></svg>`
+        };
+
+        const getTaskStatus = (task) => {
+            const endDate = new Date(task.endDate + 'T23:59:59');
+            if (task.isCompleted) return { label: 'Completed', color: 'green' };
+            if (endDate < TODAY) return { label: 'Overdue', color: 'red' };
+            const sevenDaysFromNow = new Date(TODAY);
+            sevenDaysFromNow.setDate(TODAY.getDate() + 7);
+            if (endDate <= sevenDaysFromNow) return { label: 'At-Risk', color: 'yellow' };
+            return { label: 'On Track', color: 'green' };
+        };
+
+        const calculateStageHealth = (stage) => {
+            if (!stage.tasks || stage.tasks.length === 0) return { progress: 100, status: { label: 'Completed', color: 'green' } };
+            const completedTasks = stage.tasks.filter(t => t.isCompleted).length;
+            const progress = (completedTasks / stage.tasks.length) * 100;
+            const incompleteTasks = stage.tasks.filter(t => !t.isCompleted);
+            let isOverdue = false, isAtRisk = false;
+            if (progress < 100) {
+                incompleteTasks.forEach(task => {
+                    const status = getTaskStatus(task);
+                    if (status.label === 'Overdue') isOverdue = true;
+                    if (status.label === 'At-Risk') isAtRisk = true;
+                });
+            }
+            let status = { label: 'On Track', color: 'green' };
+            if (isOverdue) status = { label: 'Overdue', color: 'red' };
+            else if (isAtRisk) status = { label: 'At-Risk', color: 'yellow' };
+            else if (progress === 100) status = { label: 'Completed', color: 'green' };
+            return { progress, status };
+        };
+
+        const calculateAllProjectsHealth = (projects) => {
+            const stageOrder = ['Pre-Production', 'Production', 'Post-Production'];
+            return projects.map(p => {
+                let hasLaggingStage = false, projectCompleted = true;
+                const stagesWithHealth = [...p.stages]
+                    .sort((a, b) => stageOrder.indexOf(a.name) - stageOrder.indexOf(b.name))
+                    .map(stage => {
+                        let { progress, status } = calculateStageHealth(stage);
+                        if (progress < 100) projectCompleted = false;
+                        if (hasLaggingStage && progress < 100) status = { label: 'Lagging', color: 'red' };
+                        else if (status.label === 'Overdue') hasLaggingStage = true;
+                        return { ...stage, progress, status };
+                    });
+                const overallProgress = stagesWithHealth.reduce((acc, s) => acc + s.progress, 0) / stagesWithHealth.length;
+                let overallStatus = { label: 'In Progress', color: 'blue' };
+                if (projectCompleted) overallStatus = { label: 'Completed', color: 'green' };
+                else if (hasLaggingStage || stagesWithHealth.some(s => s.status.label === 'Overdue')) overallStatus = { label: 'Lagging', color: 'red' };
+                else if (stagesWithHealth.some(s => s.status.label === 'At-Risk')) overallStatus = { label: 'At-Risk', color: 'yellow' };
+                return { ...p, stages: stagesWithHealth, overallProgress, overallStatus };
+            });
+        };
+
+        const renderStatusBadge = (status) => {
+            const colors = { green: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300', yellow: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300', red: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300', blue: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' };
+            return `<span class="px-2.5 py-0.5 text-xs font-medium rounded-full ${colors[status.color]}">${status.label}</span>`;
+        };
+
+        const renderProgressBar = (progress, color) => {
+            const colors = { green: 'bg-green-500', yellow: 'bg-yellow-500', red: 'bg-red-500', blue: 'bg-blue-500' };
+            return `<div class="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700"><div class="${colors[color]} h-2 rounded-full transition-all duration-500" style="width: ${progress}%"></div></div>`;
+        };
+        
+        const renderAvatar = (userId, size = 'md') => {
+            const user = TEAM_MEMBERS.find(u => u.id === userId);
+            const sizes = { sm: 'w-6 h-6', md: 'w-8 h-8', lg: 'w-10 h-10' };
+            return user ? `<img class="${sizes[size]} rounded-full object-cover ring-2 ring-white dark:ring-gray-800" src="${user.avatar}" alt="${user.name}" title="${user.name}">` : '';
+        };
+
+        const renderSidebar = () => {
+            const { isDarkMode, isSidebarCollapsed, currentPage } = state;
+            const navItems = [
+                { name: 'Dashboard', icon: 'home', page: 'home' }, { name: 'Profile', icon: 'user', page: 'profile' },
+                { name: 'Settings', icon: 'settings', page: 'settings' }, { name: 'Notifications', icon: 'bell', page: 'notifications' },
+                { name: 'Messages', icon: 'message', page: 'messages' },
+            ];
+            const navLinksHTML = navItems.map(item => `
+                <a data-navigate="${item.page}" title="${item.name}" class="flex items-center px-4 py-2 mt-2 rounded-md cursor-pointer transition-colors duration-200 ${isSidebarCollapsed ? 'justify-center' : ''} ${currentPage === item.page ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200'}">
+                    ${ICONS[item.icon]} ${!isSidebarCollapsed ? `<span class="mx-4 font-medium">${item.name}</span>` : ''}
+                </a>`).join('');
+
+            return `
+                <div class="hidden md:flex flex-col px-4 py-8 bg-white border-r dark:bg-gray-900 dark:border-gray-700 transition-all duration-300 ${isSidebarCollapsed ? 'w-20' : 'w-64'}">
+                    <div class="flex items-center justify-between"><h2 class="text-3xl font-semibold text-gray-800 dark:text-white ${isSidebarCollapsed ? 'hidden' : ''}">User</h2><button data-action="toggle-sidebar" class="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700">${isSidebarCollapsed ? ICONS.chevronRight : ICONS.chevronLeft}</button></div>
+                    <div class="flex flex-col items-center mt-6 -mx-2 border-t dark:border-gray-700 pt-4">${renderAvatar(currentUser.id, isSidebarCollapsed ? 'md' : 'lg')}
+                        <div class="${isSidebarCollapsed ? 'hidden' : ''}"><h4 class="mx-2 mt-2 font-medium text-gray-800 dark:text-gray-200">${currentUser.name}</h4><p class="mx-2 mt-1 text-sm font-medium text-gray-600 dark:text-gray-400">${currentUser.role}</p></div>
+                    </div>
+                    <div class="flex flex-col justify-between flex-1 mt-6"><nav>${navLinksHTML}</nav>
+                        <div class="flex flex-col items-center mt-6 -mx-2">
+                            <button data-action="toggle-dark-mode" class="w-full flex items-center justify-center px-4 py-2 mb-2 text-gray-600 bg-gray-100 rounded-lg dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700">${isDarkMode ? ICONS.sun : ICONS.moon} <span class="mx-2 font-medium ${isSidebarCollapsed ? 'hidden' : ''}">${isDarkMode ? 'Light' : 'Dark'}</span></button>
+                            <a class="w-full flex items-center justify-center px-4 py-2 text-gray-600 bg-gray-100 rounded-lg dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700" href="#">${ICONS.logout} <span class="mx-2 font-medium ${isSidebarCollapsed ? 'hidden' : ''}">Logout</span></a>
+                        </div>
+                    </div>
+                </div>`;
+        };
+
+        const renderHomePage = (projects) => {
+            const stats = { total: projects.length, completed: projects.filter(p => p.overallStatus.label === 'Completed').length, inProgress: projects.filter(p => ['In Progress', 'At-Risk'].includes(p.overallStatus.label)).length, lagging: projects.filter(p => p.overallStatus.label === 'Lagging').length };
+            const projectCards = projects.map(p => `
+                <div data-navigate="${p.platform}" data-project-id="${p.id}" class="p-4 rounded-lg bg-gray-50 dark:bg-gray-700/50 cursor-pointer hover:shadow-lg transition-shadow">
+                    <div class="flex items-center justify-between"><div class="flex items-center gap-3"><div class="w-3 h-3 rounded-full ${p.platform === 'flame' ? 'bg-orange-500' : 'bg-blue-500'}"></div><p class="font-semibold text-gray-800 dark:text-gray-100">${p.name}</p></div>${renderStatusBadge(p.overallStatus)}</div>
+                    <div class="mt-3">${renderProgressBar(p.overallProgress, p.overallStatus.color)}</div>
+                </div>`).join('');
+            return `<div class="p-6 md:p-8 space-y-8"><h1 class="text-3xl font-bold text-gray-800 dark:text-white">Welcome, ${currentUser.name.split(' ')[0]}!</h1><p class="text-gray-600 dark:text-gray-300">Here's a look at your assigned projects.</p><div class="grid grid-cols-1 gap-8 md:grid-cols-2"><div data-navigate="flame" class="p-8 rounded-xl bg-gradient-to-br from-orange-400 to-red-500 text-white shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 cursor-pointer"><h2 class="text-4xl font-bold">Flame</h2><p class="mt-2 text-lg opacity-80">Internal Creative Projects</p></div><div data-navigate="swayam" class="p-8 rounded-xl bg-gradient-to-br from-blue-400 to-indigo-500 text-white shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 cursor-pointer"><h2 class="text-4xl font-bold">Swayam</h2><p class="mt-2 text-lg opacity-80">External Educational Courses</p></div></div><div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md"><h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Your Projects Overview</h3><div class="flex flex-wrap items-center gap-4 mb-6 text-sm text-gray-600 dark:text-gray-300"><span>Total: <span class="font-bold text-gray-900 dark:text-white">${stats.total}</span></span><span class="text-green-600 dark:text-green-400">Completed: <span class="font-bold">${stats.completed}</span></span><span class="text-blue-600 dark:text-blue-400">In Progress: <span class="font-bold">${stats.inProgress}</span></span><span class="text-red-600 dark:text-red-400">Lagging: <span class="font-bold">${stats.lagging}</span></span></div><div class="space-y-4">${projectCards}</div></div></div>`;
+        };
+
+        const renderProjectDetailView = (project) => {
+            const pm = TEAM_MEMBERS.find(u => u.id === project.projectManagerId);
+            const stagesHTML = project.stages.map(stage => {
+                const tasksHTML = stage.tasks.map(task => {
+                    const isAssigned = stage.assignedTeamMemberIds.includes(CURRENT_USER_ID);
+                    return `<div class="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-md ${!isAssigned ? 'opacity-60' : ''}"><div class="flex items-center gap-3"><input type="checkbox" ${task.isCompleted ? 'checked' : ''} ${!isAssigned ? 'disabled' : ''} data-action="toggle-task" data-project-id="${project.id}" data-stage-id="${stage.id}" data-task-id="${task.id}" class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"><p class="text-gray-800 dark:text-gray-200 ${task.isCompleted ? 'line-through text-gray-500' : ''}">${task.name}</p></div><div class="flex items-center gap-4"><p class="text-sm text-gray-500 dark:text-gray-400">${new Date(task.startDate+'T00:00:00').toLocaleDateString()} - ${new Date(task.endDate+'T00:00:00').toLocaleDateString()}</p>${renderStatusBadge(getTaskStatus(task))}</div></div>`;
+                }).join('');
+                const personnelHTML = stage.assignedTeamMemberIds.map(id => renderAvatar(id)).join('');
+                return `<div class="bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700"><div data-action="toggle-section" data-project-id="${project.id}" data-stage-id="${stage.id}" class="p-4 flex justify-between items-center cursor-pointer"><div><h4 class="font-semibold text-lg text-gray-800 dark:text-gray-100">${stage.name}</h4><div class="mt-2">${renderProgressBar(stage.progress, stage.status.color)}</div></div><div class="flex items-center gap-4">${renderStatusBadge(stage.status)}<div class="transform ${stage.isOpen ? 'rotate-180' : ''}">${ICONS.chevronDown}</div></div></div><div class="${stage.isOpen ? '' : 'hidden'} p-4 border-t border-gray-200 dark:border-gray-700"><h5 class="font-semibold text-gray-700 dark:text-gray-300 mb-3">Tasks</h5><div class="space-y-3">${tasksHTML}</div><h5 class="font-semibold text-gray-700 dark:text-gray-300 mt-6 mb-3">Assigned Personnel</h5><div class="flex items-center -space-x-2 p-3 bg-white dark:bg-gray-800 rounded-md">${personnelHTML || '<p class="text-sm text-gray-500 ml-2">No one assigned</p>'}</div></div></div>`;
+            }).join('');
+            return `<div class="p-6 h-full overflow-y-auto"><div class="flex justify-between items-start"><div><h2 class="text-3xl font-bold text-gray-800 dark:text-white">${project.name}</h2><p class="text-gray-500 dark:text-gray-400 mt-1">${project.scenario}</p><div class="flex items-center gap-2 mt-3">${renderAvatar(pm.id)}<div><p class="font-semibold text-gray-700 dark:text-gray-200">${pm.name}</p><p class="text-xs text-gray-500 dark:text-gray-400">Project Manager</p></div></div></div>${renderStatusBadge(project.overallStatus)}</div><div class="mt-6"><h3 class="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">Overall Progress</h3>${renderProgressBar(project.overallProgress, project.overallStatus.color)}</div><div class="mt-8 space-y-4">${stagesHTML}</div></div>`;
+        };
+
+        const renderPlatformWorkspace = (platform, projects) => {
+            const platformProjects = projects.filter(p => p.platform === platform);
+            if (state.pendingProjectId && platformProjects.some(p => p.id === state.pendingProjectId)) {
+                state.selectedProjectId = state.pendingProjectId;
+                state.pendingProjectId = null;
+            } else if (!state.selectedProjectId || !platformProjects.some(p=>p.id === state.selectedProjectId)) {
+                 state.selectedProjectId = platformProjects.length > 0 ? platformProjects[0].id : null;
+            }
+            const selectedProject = platformProjects.find(p => p.id === state.selectedProjectId);
+            const colors = { flame: { text: 'text-orange-500', bg: 'bg-orange-500/10' }, swayam: { text: 'text-blue-500', bg: 'bg-blue-500/10' } };
+            const listHTML = platformProjects.map(p => `<div data-action="select-project" data-project-id="${p.id}" class="p-4 border-b dark:border-gray-700 cursor-pointer transition-colors ${state.selectedProjectId===p.id ? colors[platform].bg : 'hover:bg-gray-100 dark:hover:bg-gray-800/50'}"><div class="flex justify-between items-center"><p class="font-semibold text-gray-800 dark:text-gray-100">${p.name}</p>${renderStatusBadge(p.overallStatus)}</div><div class="mt-2">${renderProgressBar(p.overallProgress, p.overallStatus.color)}</div></div>`).join('');
+            return `<div class="flex h-full"><div class="w-full md:w-1/3 border-r dark:border-gray-700 flex flex-col h-full"><div class="p-4 border-b dark:border-gray-700"><h2 class="text-2xl font-bold capitalize ${colors[platform].text}">${platform} Projects</h2></div><div class="flex-grow overflow-y-auto">${listHTML}</div></div><div class="hidden md:block md:w-2/3 bg-white dark:bg-gray-800">${selectedProject ? renderProjectDetailView(selectedProject) : `<div class="h-full flex items-center justify-center"><p class="text-gray-500 dark:text-gray-400 text-lg">Select a project</p></div>`}</div></div>`;
+        };
+
+        const renderPlaceholderPage = (title, message) => `<div class="p-6 md:p-8"><h1 class="text-3xl font-bold text-gray-800 dark:text-white">${title}</h1><div class="mt-8 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md"><p class="text-gray-600 dark:text-gray-300">${message}</p></div></div>`;
+
+        const renderApp = () => {
+            const projects = calculateAllProjectsHealth(state.projects);
+            const userProjects = projects.filter(p => p.stages.some(s => s.assignedTeamMemberIds.includes(CURRENT_USER_ID)));
+            document.getElementById('sidebar-container').innerHTML = renderSidebar();
+            let pageHTML;
+            switch (state.currentPage) {
+                case 'home': pageHTML = renderHomePage(userProjects); break;
+                case 'flame': case 'swayam': pageHTML = renderPlatformWorkspace(state.currentPage, userProjects); break;
+                case 'profile': pageHTML = renderPlaceholderPage("Profile", "User profile, settings, and activity logs."); break;
+                case 'settings': pageHTML = renderPlaceholderPage("Settings", "Application-wide settings and preferences."); break;
+                case 'notifications': pageHTML = renderPlaceholderPage("Notifications", "All project updates and alerts."); break;
+                case 'messages': pageHTML = renderPlaceholderPage("Messages", "Direct messaging for team collaboration."); break;
+                default: pageHTML = renderHomePage(userProjects);
+            }
+            document.getElementById('main-content-container').innerHTML = `<div class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 dark:bg-gray-950">${pageHTML}</div>`;
+        };
+
+        const navigate = (page, projectId = null) => {
+            state.currentPage = page;
+            state.pendingProjectId = projectId;
+            if (page !== 'flame' && page !== 'swayam') state.selectedProjectId = null;
+            renderApp();
+        };
+
+        const toggleDarkMode = () => {
+            state.isDarkMode = !state.isDarkMode;
+            document.documentElement.classList.toggle('dark', state.isDarkMode);
+            renderApp();
+        };
+
+        const toggleSidebar = () => {
+            state.isSidebarCollapsed = !state.isSidebarCollapsed;
+            renderApp();
+        };
+
+        const selectProject = (projectId) => {
+            state.selectedProjectId = projectId;
+            renderApp();
+        };
+        
+        const toggleTask = (projectId, stageId, taskId) => {
+            const project = state.projects.find(p => p.id === projectId);
+            const stage = project?.stages.find(s => s.id === stageId);
+            const task = stage?.tasks.find(t => t.id === taskId);
+            if(task) task.isCompleted = !task.isCompleted;
+            renderApp();
+        };
+        
+        const toggleStageSection = (projectId, stageId) => {
+            const project = state.projects.find(p => p.id === projectId);
+            const stage = project?.stages.find(s => s.id === stageId);
+            if(stage) stage.isOpen = !stage.isOpen;
+            renderApp();
+        };
+
+        document.addEventListener('click', (e) => {
+            const nav = e.target.closest('[data-navigate]');
+            if (nav) return navigate(nav.dataset.navigate, nav.dataset.projectId || null);
+
+            const action = e.target.closest('[data-action]');
+            if (action) {
+                const { dataset } = action;
+                switch(dataset.action) {
+                    case 'toggle-dark-mode': toggleDarkMode(); break;
+                    case 'toggle-sidebar': toggleSidebar(); break;
+                    case 'select-project': selectProject(dataset.projectId); break;
+                    case 'toggle-task': toggleTask(dataset.projectId, dataset.stageId, dataset.taskId); break;
+                    case 'toggle-section': toggleStageSection(dataset.projectId, dataset.stageId); break;
+                }
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', renderApp);
+    </script>
+</body>
+</html>
+

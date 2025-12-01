@@ -2,11 +2,9 @@ import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChange
 import { ActivatedRoute } from '@angular/router';
 import { Project, ProjectStage, Task } from '../../models/project.model';
 import { User } from '../../models/user.model';
-import { Comment } from '../../models/comment.model';
 import { ProjectService } from '../../services/project.service';
 import { AuthService } from '../../services/auth.service';
 import { TaskService } from '../../services/task.service';
-import { CommentService } from '../../services/comment.service';
 
 @Component({
   selector: 'app-project-detail',
@@ -27,75 +25,54 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
   hasUnsavedChanges = false; // Track if changes were made
   selectedManagerId = '';
 
-  comments: Comment[] = [];
-  newCommentContent = '';
-
   constructor(
     private route: ActivatedRoute,
     private projectService: ProjectService,
     private authService: AuthService,
-    private taskService: TaskService,
-    private commentService: CommentService
+    private taskService: TaskService
   ) { }
 
   ngOnInit() {
     if (this.project) {
       this.editedProjectName = this.project.name;
-      this.loadComments();
     }
   }
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['project'] && this.project) {
       this.editedProjectName = this.project.name;
-      this.loadComments();
+      this.sortStages();
     }
   }
 
-  loadComments() {
-    if (!this.project) return;
+  sortStages() {
+    if (!this.project || !this.project.stages) return;
 
-    // Sort stages: Pre-Production -> Production -> Post-Production
-    const stageOrder = {
-      'Pre-Production': 1,
-      'Production': 2,
-      'Post-Production': 3
-    };
+    const stageOrder = ['Pre-Production', 'Production', 'Post-Production'];
 
-    if (this.project.stages) {
-      this.project.stages.sort((a, b) => {
-        const orderA = stageOrder[a.name] || 99;
-        const orderB = stageOrder[b.name] || 99;
-        return orderA - orderB;
-      });
-    }
+    this.project.stages.sort((a, b) => {
+      const indexA = stageOrder.indexOf(a.name);
+      const indexB = stageOrder.indexOf(b.name);
 
-    this.commentService.getComments(this.project.id).subscribe({
-      next: (comments) => this.comments = comments,
-      error: (err) => console.error('Error loading comments:', err)
+      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+      return a.name.localeCompare(b.name);
     });
-  }
 
-  postComment() {
-    if (!this.project || !this.newCommentContent.trim()) return;
-
-    this.commentService.createComment(this.project.id, this.newCommentContent).subscribe({
-      next: (comment) => {
-        this.loadComments();
-        this.newCommentContent = '';
-      },
-      error: (err) => console.error('Error posting comment:', err)
+    // Ensure stages are open by default (fixes "cant expand" if undefined)
+    this.project.stages.forEach(s => {
+      if (s.isOpen === undefined) s.isOpen = true;
     });
   }
 
   toggleEditMode() {
     if (this.isEditMode) {
-      // Save changes
       this.saveChanges();
       this.isEditMode = false;
     } else {
       this.isEditMode = true;
-      this.hasUnsavedChanges = false; // Reset on enter
+      this.hasUnsavedChanges = false;
     }
   }
 
@@ -108,11 +85,7 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
   }
 
   startEditingName() {
-    // Admins or PMs can edit project name
-    if (!this.canManageProject) {
-      console.log('Only admins or PMs can edit project name');
-      return;
-    }
+    if (!this.canManageProject) return;
     this.isEditingName = true;
     this.editedProjectName = this.project?.name || '';
   }
@@ -196,16 +169,20 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
   assignUserToStage(stage: ProjectStage, event: any) {
     const userId = event.target.value;
     if (userId && this.project) {
-      this.projectService.assignUsersToStage(stage.id, [userId])
+      const currentIds = stage.assignedTeamMembers.map(u => u.id);
+      if (currentIds.includes(userId)) {
+        event.target.value = '';
+        return;
+      }
+      const newUserIds = [...currentIds, userId];
+      this.projectService.assignUsersToStage(stage.id, newUserIds)
         .subscribe({
           next: (updatedStage) => {
             if (this.project) {
               const stageIndex = this.project.stages.findIndex(s => s.id === stage.id);
               if (stageIndex !== -1) {
                 const user = this.availableManagers.find(u => u.id === userId);
-                if (user && !stage.assignedTeamMembers.find(u => u.id === userId)) {
-                  stage.assignedTeamMembers.push(user);
-                }
+                if (user) stage.assignedTeamMembers.push(user);
               }
             }
             event.target.value = '';
@@ -225,9 +202,7 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
               const stage = this.project.stages.find(s => s.id === task.stageId);
               if (stage) {
                 const taskIndex = stage.tasks.findIndex(t => t.id === task.id);
-                if (taskIndex !== -1) {
-                  stage.tasks[taskIndex] = updatedTask;
-                }
+                if (taskIndex !== -1) stage.tasks[taskIndex] = updatedTask;
               }
             }
             event.target.value = '';
@@ -248,9 +223,7 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
           const stage = this.project.stages.find(s => s.id === task.stageId);
           if (stage) {
             const taskIndex = stage.tasks.findIndex(t => t.id === task.id);
-            if (taskIndex !== -1) {
-              stage.tasks[taskIndex] = updatedTask;
-            }
+            if (taskIndex !== -1) stage.tasks[taskIndex] = updatedTask;
           }
           this.projectService.calculateProjectHealth(this.project.id).subscribe();
         }
@@ -259,20 +232,37 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
     });
   }
 
-  getStatusColor(status: string): string {
-    const colors: { [key: string]: string } = {
-      'on_track': 'green',
-      'at_risk': 'yellow',
-      'overdue': 'red',
-      'completed': 'green',
-      'setup': 'blue',
-      'in_progress': 'blue',
-      'lagging': 'red'
-    };
-    return colors[status] || 'gray';
+  // New method to calculate status dynamically based on dates (from final_user.html)
+  getTaskStatus(task: Task): { label: string, color: string } {
+    if (task.isCompleted) return { label: 'Completed', color: 'green' };
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const endDate = new Date(task.endDate);
+
+    if (endDate < today) return { label: 'Overdue', color: 'red' };
+
+    const sevenDaysFromNow = new Date(today);
+    sevenDaysFromNow.setDate(today.getDate() + 7);
+
+    if (endDate <= sevenDaysFromNow) return { label: 'At-Risk', color: 'yellow' };
+
+    return { label: 'On Track', color: 'green' };
   }
 
-  getStatusBadgeClass(status: string): string {
+  getStatusBadgeClass(status: string | any): string {
+    // If status is an object (from getTaskStatus), use it
+    if (typeof status === 'object' && status.color) {
+      const colors: { [key: string]: string } = {
+        'green': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+        'yellow': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+        'red': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+        'blue': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300'
+      };
+      return `px-2.5 py-0.5 text-xs font-medium rounded-full ${colors[status.color] || 'bg-gray-100 text-gray-800'}`;
+    }
+
+    // Fallback for string status (project/stage status)
     if (!status) return 'bg-gray-100 text-gray-800';
     const normalizedStatus = status.toLowerCase().replace(' ', '_');
     const colors: { [key: string]: string } = {
@@ -285,6 +275,17 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
       'lagging': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
     };
     return `px-2.5 py-0.5 text-xs font-medium rounded-full ${colors[normalizedStatus] || 'bg-gray-100 text-gray-800'}`;
+  }
+
+  getProgressBarColorByPercentage(progress: number): string {
+    if (progress <= 25) return 'bg-red-500';
+    if (progress <= 50) return 'bg-orange-500';
+    if (progress <= 75) return 'bg-blue-500';
+    return 'bg-green-500';
+  }
+
+  getTodayDate(): string {
+    return new Date().toISOString().split('T')[0];
   }
 
   getProgressBarClass(status: string): string {
@@ -301,6 +302,7 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
   }
 
   formatStatus(status: string): string {
+    if (!status) return '';
     return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   }
 
@@ -323,8 +325,6 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
     if (this.currentUser.role === 'admin' || this.currentUser.id === this.project?.projectManager?.id) return true;
 
     // Assigned users can ONLY edit if they are assigned to the task
-    // The user requirement says: "if i assign a task to a user he/she can only edit that when the project manager assigned"
-    // This implies they must be in the assignedTeamMembers list.
     return task.assignedTeamMembers?.some(u => u.id === this.currentUser?.id) || false;
   }
 

@@ -7,15 +7,7 @@
       class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
       rows="3" placeholder="Write a comment..."></textarea>
 
-    <div class="flex justify-between items-center mt-3">
-      <div class="flex gap-2">
-        <button (click)="newCommentType = 'on_track'" [class.ring-2]="newCommentType === 'on_track'"
-          class="px-3 py-1 text-xs rounded-full bg-green-200 text-green-800 hover:bg-green-300">On Track</button>
-        <button (click)="newCommentType = 'caution'" [class.ring-2]="newCommentType === 'caution'"
-          class="px-3 py-1 text-xs rounded-full bg-yellow-200 text-yellow-800 hover:bg-yellow-300">Caution</button>
-        <button (click)="newCommentType = 'urgent'" [class.ring-2]="newCommentType === 'urgent'"
-          class="px-3 py-1 text-xs rounded-full bg-red-200 text-red-800 hover:bg-red-300">Urgent</button>
-      </div>
+    <div class="flex justify-end items-center mt-3">
       <button (click)="addComment()" [disabled]="!newCommentText.trim()"
         class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition">
         Post Comment
@@ -25,18 +17,29 @@
 
   <!-- Comments List -->
   <div class="space-y-4">
-    <div *ngFor="let comment of comments" class="p-4 rounded-lg border-l-4" [ngClass]="getTypeClass(comment.type)">
+    <div *ngIf="loading" class="text-center py-4">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+    </div>
+
+    <div *ngFor="let comment of comments"
+      class="p-4 rounded-lg border-l-4 bg-white dark:bg-gray-800 border-blue-500 shadow-sm">
       <div class="flex justify-between items-start mb-2">
         <div class="flex items-center gap-2">
-          <img [src]="comment.user?.avatar || 'assets/default-avatar.png'" class="w-6 h-6 rounded-full">
-          <span class="font-semibold text-sm">{{ comment.user?.name }}</span>
-          <span class="text-xs opacity-75">{{ comment.createdAt | date:'short' }}</span>
+          <div
+            class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-xs font-bold text-white overflow-hidden">
+            <img *ngIf="comment.user?.avatar" [src]="comment.user.avatar" class="w-full h-full object-cover">
+            <span *ngIf="!comment.user?.avatar">{{ comment.user?.name?.charAt(0) | uppercase }}</span>
+          </div>
+          <div class="flex flex-col">
+            <span class="font-semibold text-sm text-gray-800 dark:text-gray-200">{{ comment.user?.name }}</span>
+            <span class="text-xs text-gray-500">{{ comment.createdAt | date:'medium' }}</span>
+          </div>
         </div>
-        <span class="text-xs font-bold uppercase px-2 py-0.5 rounded bg-white/50">{{ comment.type }}</span>
       </div>
-      <p class="text-sm whitespace-pre-wrap">{{ comment.text }}</p>
+      <p class="text-sm whitespace-pre-wrap text-gray-700 dark:text-gray-300 mt-2">{{ comment.content }}</p>
     </div>
-    <div *ngIf="comments.length === 0" class="text-center text-gray-500 italic">
+
+    <div *ngIf="!loading && comments.length === 0" class="text-center text-gray-500 italic">
       No comments yet. Be the first to start the discussion!
     </div>
   </div>

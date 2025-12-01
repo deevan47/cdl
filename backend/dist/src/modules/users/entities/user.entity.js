@@ -14,6 +14,7 @@ const typeorm_1 = require("typeorm");
 const project_entity_1 = require("../../projects/entities/project.entity");
 const project_stage_entity_1 = require("../../projects/entities/project-stage.entity");
 const task_entity_1 = require("../../tasks/entities/task.entity");
+const comment_entity_1 = require("../../comments/entities/comment.entity");
 var UserRole;
 (function (UserRole) {
     UserRole["ADMIN"] = "admin";
@@ -67,6 +68,10 @@ __decorate([
     (0, typeorm_1.ManyToMany)(() => task_entity_1.Task, (task) => task.assignedTeamMembers),
     __metadata("design:type", Array)
 ], User.prototype, "assignedTasks", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => comment_entity_1.Comment, (comment) => comment.user),
+    __metadata("design:type", Array)
+], User.prototype, "comments", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)({ name: 'created_at' }),
     __metadata("design:type", Date)

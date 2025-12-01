@@ -203,17 +203,17 @@ export class ProjectsService {
         }
       }
     } else if (project.platform === ProjectPlatform.FLAME) {
-      // Flame: Pre (30%), Prod (20%), Post (50%)
+      // Flame: Pre (30%), Prod (30%), Post (40%)
       for (const stage of project.stages) {
         if (stage.name === StageName.PRE_PRODUCTION) {
           totalProgress += stage.progress * 0.3;
           totalWeight += 0.3;
         } else if (stage.name === StageName.PRODUCTION) {
-          totalProgress += stage.progress * 0.2;
-          totalWeight += 0.2;
+          totalProgress += stage.progress * 0.3;
+          totalWeight += 0.3;
         } else if (stage.name === StageName.POST_PRODUCTION) {
-          totalProgress += stage.progress * 0.5;
-          totalWeight += 0.5;
+          totalProgress += stage.progress * 0.4;
+          totalWeight += 0.4;
         }
       }
     } else {

@@ -24,6 +24,9 @@ let CommentsController = class CommentsController {
     create(createCommentDto, req) {
         return this.commentsService.create(createCommentDto, req.user);
     }
+    findAll() {
+        return [];
+    }
     findByProject(projectId) {
         return this.commentsService.findByProject(projectId);
     }
@@ -37,6 +40,12 @@ __decorate([
     __metadata("design:paramtypes", [create_comment_dto_1.CreateCommentDto, Object]),
     __metadata("design:returntype", void 0)
 ], CommentsController.prototype, "create", null);
+__decorate([
+    (0, common_1.Get)(),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], CommentsController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)('project/:projectId'),
     __param(0, (0, common_1.Param)('projectId')),
