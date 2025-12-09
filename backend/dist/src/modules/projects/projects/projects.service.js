@@ -209,15 +209,38 @@ let ProjectsService = ProjectsService_1 = class ProjectsService {
             }
         }
         const finalProgress = totalWeight > 0 ? (totalProgress / totalWeight) : 0;
-        let status = project_entity_1.ProjectStatus.IN_PROGRESS;
+        let status = project_entity_1.ProjectStatus.SETUP;
+        const today = new Date();
+        const deadline = project.deadline ? new Date(project.deadline) : null;
         if (finalProgress >= 100) {
             status = project_entity_1.ProjectStatus.COMPLETED;
         }
-        else if (project.stages.some(stage => stage.status === project_stage_entity_1.StageStatus.OVERDUE)) {
+        else if (deadline && today > deadline) {
             status = project_entity_1.ProjectStatus.LAGGING;
         }
-        else if (project.stages.some(stage => stage.status === project_stage_entity_1.StageStatus.AT_RISK)) {
+        else if (deadline && (deadline.getTime() - today.getTime()) / (1000 * 3600 * 24) <= 7) {
             status = project_entity_1.ProjectStatus.AT_RISK;
+        }
+        else if (finalProgress > 0) {
+            status = project_entity_1.ProjectStatus.IN_PROGRESS;
+        }
+        else if (project.projectManager) {
+            status = project_entity_1.ProjectStatus.SETUP;
+        }
+        if (finalProgress >= 100) {
+            status = project_entity_1.ProjectStatus.COMPLETED;
+        }
+        else if (deadline && today > deadline) {
+            status = project_entity_1.ProjectStatus.LAGGING;
+        }
+        else if (deadline && (deadline.getTime() - today.getTime()) / (1000 * 3600 * 24) <= 7) {
+            status = project_entity_1.ProjectStatus.AT_RISK;
+        }
+        else if (finalProgress > 0) {
+            status = project_entity_1.ProjectStatus.IN_PROGRESS;
+        }
+        else {
+            status = project_entity_1.ProjectStatus.SETUP;
         }
         project.overallProgress = parseFloat(finalProgress.toFixed(2));
         project.status = status;

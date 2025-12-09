@@ -229,13 +229,45 @@ export class ProjectsService {
     // If totalWeight is 0 (no matching stages), progress is 0
     const finalProgress = totalWeight > 0 ? (totalProgress / totalWeight) : 0;
 
-    let status = ProjectStatus.IN_PROGRESS;
+    // Determine Status
+    let status = ProjectStatus.SETUP;
+    const today = new Date();
+    const deadline = project.deadline ? new Date(project.deadline) : null;
+
     if (finalProgress >= 100) {
       status = ProjectStatus.COMPLETED;
-    } else if (project.stages.some(stage => stage.status === StageStatus.OVERDUE)) {
+    } else if (deadline && today > deadline) {
       status = ProjectStatus.LAGGING;
-    } else if (project.stages.some(stage => stage.status === StageStatus.AT_RISK)) {
+    } else if (deadline && (deadline.getTime() - today.getTime()) / (1000 * 3600 * 24) <= 7) {
       status = ProjectStatus.AT_RISK;
+    } else if (finalProgress > 0) {
+      status = ProjectStatus.IN_PROGRESS;
+    } else if (project.projectManager) {
+      // If PM is assigned but 0 progress, it's technically SETUP or IN_PROGRESS depending on interpretation
+      // User said: "if the admin gave access to the PM its setup"
+      // But if it's 0% it might stay SETUP until they do something.
+      // Let's keep it as SETUP if 0%, or IN_PROGRESS if explicitly set.
+      // Actually, let's stick to the user's rule: "if its started moving should be inprogress" -> implies 0% is SETUP
+      status = ProjectStatus.SETUP;
+    }
+
+    // Override if previously set to IN_PROGRESS and still 0%? 
+    // The user said "if the admin gave access to the PM its setup".
+    // So if PM is assigned, it is SETUP.
+    // "if its started moving should be inprogress" -> Progress > 0.
+
+    // Refined Logic:
+    if (finalProgress >= 100) {
+      status = ProjectStatus.COMPLETED;
+    } else if (deadline && today > deadline) {
+      status = ProjectStatus.LAGGING;
+    } else if (deadline && (deadline.getTime() - today.getTime()) / (1000 * 3600 * 24) <= 7) {
+      status = ProjectStatus.AT_RISK;
+    } else if (finalProgress > 0) {
+      status = ProjectStatus.IN_PROGRESS;
+    } else {
+      // 0% progress
+      status = ProjectStatus.SETUP;
     }
 
     project.overallProgress = parseFloat(finalProgress.toFixed(2));

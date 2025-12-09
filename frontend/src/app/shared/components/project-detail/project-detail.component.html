@@ -1,268 +1,285 @@
-<div class="p-6 h-full overflow-y-auto">
-  <!-- Project Header -->
-  <div class="flex justify-between items-start mb-6">
-    <div class="flex-1">
-      <div class="flex items-center gap-4 mb-4">
-        <div *ngIf="!isEditingName">
-          <h2 class="text-3xl font-bold text-gray-800 dark:text-white">{{ project.name }}</h2>
-          <button *ngIf="canManageProject" (click)="startEditingName()"
-            class="text-sm text-blue-600 dark:text-blue-400 hover:underline mt-1">
-            Edit Name
-          </button>
-        </div>
-        <div *ngIf="isEditingName" class="flex items-center gap-2">
-          <input [(ngModel)]="editedProjectName" (keyup.enter)="saveProjectName()" (keyup.escape)="cancelEditingName()"
-            class="text-3xl font-bold bg-transparent border-b-2 border-blue-500 focus:outline-none text-gray-800 dark:text-white">
-          <button (click)="saveProjectName()"
-            class="px-3 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600">
-            Save
-          </button>
-          <button (click)="cancelEditingName()"
-            class="px-3 py-1 text-sm bg-gray-500 text-white rounded hover:bg-gray-600">
-            Cancel
-          </button>
-        </div>
-      </div>
-
-      <p class="text-gray-500 dark:text-gray-400 mb-4">{{ project.scenario }}</p>
-
-      <!-- Project Manager Section -->
-      <div *ngIf="project.projectManager" class="flex items-center gap-4 mb-4">
-        <div class="flex items-center gap-2">
-          <img [src]="project.projectManager.avatar" [alt]="project.projectManager.name"
-            class="w-10 h-10 rounded-full object-cover ring-2 ring-white dark:ring-gray-800">
-          <div>
-            <p class="font-semibold text-gray-700 dark:text-gray-200">{{ project.projectManager.name }}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">Project Manager</p>
-          </div>
-        </div>
-      </div>
-
-      <div *ngIf="!project.projectManager && availableManagers.length > 0" class="mb-4">
-        <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">Assign a Project Manager:</p>
-        <select (change)="onManagerSelected($event)"
-          class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
-          <option value="">Select Manager...</option>
-          <option *ngFor="let manager of availableManagers" [value]="manager.id">
-            {{ manager.name }} - {{ manager.role }}
-          </option>
-        </select>
-      </div>
+<div class="p-6 h-full overflow-y-auto bg-gray-50 dark:bg-gray-900">
+  <!-- Breadcrumb / Header Area -->
+  <div class="mb-6 flex justify-between items-center">
+    <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+      <a routerLink="/dashboard" class="hover:text-blue-600 cursor-pointer transition-colors">Dashboard</a>
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+      </svg>
+      <!-- Clickable Platform Breadcrumb -->
+      <a (click)="navigateToPlatform()"
+        class="hover:text-blue-600 cursor-pointer transition-colors font-medium text-gray-700 dark:text-gray-300">
+        {{ project.platform | titlecase }}
+      </a>
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+      </svg>
+      <span class="truncate max-w-[200px]">{{ project.name }}</span>
     </div>
 
-    <div class="flex items-center gap-4">
-      <span [class]="getStatusBadgeClass(project.status)">{{ formatStatus(project.status) }}</span>
-
-      <!-- Edit Mode Toggle -->
-      <button *ngIf="canManageProject" (click)="toggleEditMode()" [disabled]="isEditMode && !hasUnsavedChanges"
-        class="px-4 py-2 text-sm font-medium text-white rounded-md transition-colors shadow-sm flex items-center gap-2"
-        [ngClass]="{
-          'bg-green-600 hover:bg-green-700': isEditMode && hasUnsavedChanges,
-          'bg-gray-400 cursor-not-allowed': isEditMode && !hasUnsavedChanges,
-          'bg-blue-600 hover:bg-blue-700': !isEditMode
-        }">
-        <svg *ngIf="!isEditMode" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
-          stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-        </svg>
-        <svg *ngIf="isEditMode" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
-          stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-        </svg>
-        {{ isEditMode ? 'Save Changes' : 'Edit Project' }}
-      </button>
-
-      <button *ngIf="currentUser && currentUser.role === 'admin'" (click)="archiveProject()"
-        class="p-2 text-gray-500 rounded-full hover:bg-yellow-100 hover:text-yellow-600 dark:hover:bg-yellow-900/50 dark:hover:text-yellow-400 transition"
-        title="Archive Project">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-        </svg>
-      </button>
-      <button *ngIf="currentUser?.role === 'admin'" (click)="deleteProject()"
-        class="p-2 text-gray-500 rounded-full hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/50 dark:hover:text-red-400 transition"
-        title="Delete Project">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 2 0 00-1 1v3M4 7h16" />
-        </svg>
-      </button>
-    </div>
+    <!-- Open Full Page Button (Hidden if already in full page) -->
+    <button *ngIf="!isFullPage" (click)="openFullView()"
+      class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50 transition">
+      <span>Open Full View</span>
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+      </svg>
+    </button>
   </div>
 
-  <!-- Overall Progress -->
-  <div class="mb-8">
-    <div class="mb-6">
-      <div class="flex justify-between items-center mb-2">
-        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Overall Progress</span>
-        <span class="text-sm font-bold text-gray-900 dark:text-white">{{ project.overallProgress }}%</span>
-      </div>
-      <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4">
-        <div [class]="getProgressBarColorByPercentage(project.overallProgress)"
-          class="h-4 rounded-full transition-all duration-500" [style.width.%]="project.overallProgress"></div>
-      </div>
-    </div>
-  </div>
+  <!-- Main Content Card -->
+  <div
+    class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden mb-8">
 
-  <!-- Stages -->
-  <div class="space-y-6">
-    <div *ngFor="let stage of project.stages"
-      class="bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
-      <!-- Stage Header -->
-      <div (click)="toggleStage(stage)"
-        class="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors">
+    <!-- Project Header -->
+    <div class="p-6 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+      <div class="flex justify-between items-start">
         <div class="flex-1">
-          <div class="flex items-center gap-3 mb-2">
-            <h4 class="font-semibold text-lg text-gray-800 dark:text-gray-100">{{ stage.name }}</h4>
-            <!-- Stage Assignees (Avatars) -->
+          <div class="flex items-center gap-4 mb-2">
+            <div *ngIf="!isEditingName">
+              <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ project.name }}</h1>
+              <button *ngIf="canManageProject" (click)="startEditingName()"
+                class="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1">
+                Edit Name
+              </button>
+            </div>
+            <div *ngIf="isEditingName" class="flex items-center gap-2">
+              <input [(ngModel)]="editedProjectName" (keyup.enter)="saveProjectName()"
+                (keyup.escape)="cancelEditingName()"
+                class="text-2xl font-bold bg-transparent border-b-2 border-blue-500 focus:outline-none text-gray-900 dark:text-white">
+              <button (click)="saveProjectName()"
+                class="px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600">Save</button>
+              <button (click)="cancelEditingName()"
+                class="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600">Cancel</button>
+            </div>
           </div>
-          <div class="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
-            <div [class]="getProgressBarColorByPercentage(stage.progress)" [style.width.%]="stage.progress"
-              class="h-2 rounded-full transition-all duration-500"></div>
-          </div>
-        </div>
-        <div class="flex items-center gap-4">
-          <span [class]="getStatusBadgeClass(stage.status)">{{ (stage.status?.label || stage.status) | titlecase
-            }}</span>
-          <span class="transform transition-transform" [class.rotate-180]="stage.isOpen">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24"
-              stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
-          </span>
-        </div>
-      </div>
+          <p class="text-gray-500 dark:text-gray-400 text-sm mb-4">{{ project.scenario }}</p>
 
-      <!-- Stage Content -->
-      <div *ngIf="stage.isOpen" class="p-4 border-t border-gray-200 dark:border-gray-700">
-
-        <!-- Assigned Personnel -->
-        <div class="mb-6">
-          <h5 class="font-semibold text-gray-700 dark:text-gray-300 mb-3">Assigned Stage Personnel</h5>
-          <div class="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-md">
-            <div class="flex items-center -space-x-2">
-              <ng-container *ngFor="let user of stage.assignedTeamMembers">
-                <div class="relative group/avatar">
-                  <div
-                    class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-sm ring-2 ring-white dark:ring-gray-800"
-                    [title]="user.name">
-                    <img *ngIf="user.avatar" [src]="user.avatar" class="w-full h-full rounded-full object-cover">
-                    <span *ngIf="!user.avatar">{{ user.name.charAt(0) }}</span>
-                  </div>
-                  <!-- Remove Button (Only in Edit Mode) -->
-                  <button *ngIf="isEditMode && canManageProject" (click)="removeUserFromStage(stage, user)"
-                    class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover/avatar:opacity-100 transition-opacity"
-                    title="Remove user">
-                    &times;
-                  </button>
-                </div>
-              </ng-container>
-              <span *ngIf="stage.assignedTeamMembers.length === 0" class="text-sm text-gray-500 ml-2">No one
-                assigned</span>
+          <!-- Manager Info -->
+          <div class="flex items-center gap-3">
+            <div *ngIf="project.projectManager"
+              class="flex items-center gap-2 bg-white dark:bg-gray-700 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-600 shadow-sm">
+              <img [src]="project.projectManager.avatar || 'assets/default-avatar.png'"
+                class="w-6 h-6 rounded-full object-cover">
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ project.projectManager.name
+                }}</span>
+              <span class="text-xs text-gray-400 border-l border-gray-300 dark:border-gray-500 pl-2 ml-1">Manager</span>
             </div>
 
-            <!-- Assign Dropdown: Removed (Background assignment only) -->
+            <div *ngIf="!project.projectManager && availableManagers.length > 0">
+              <select (change)="onManagerSelected($event)"
+                class="text-sm px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500">
+                <option value="">Assign Manager...</option>
+                <option *ngFor="let manager of availableManagers" [value]="manager.id">{{ manager.name }}</option>
+              </select>
+            </div>
           </div>
         </div>
 
-        <!-- Tasks Section -->
-        <div class="mb-6">
-          <div class="flex justify-between items-center mb-4">
-            <h5 class="font-semibold text-gray-700 dark:text-gray-300">Tasks</h5>
+        <!-- Actions & Status -->
+        <div class="flex flex-col items-end gap-3">
+          <span [class]="getStatusBadgeClass(project.status)"
+            class="px-3 py-1 rounded-full text-sm font-medium shadow-sm">
+            {{ formatStatus(project.status) }}
+          </span>
 
-            <!-- Add Task: Only visible in Edit Mode -->
-            <button *ngIf="isEditMode && canManageProject" (click)="openTaskModal(stage.id)"
-              class="flex items-center gap-1 px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 transition">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+          <div class="flex items-center gap-2">
+            <button *ngIf="canManageProject" (click)="toggleEditMode()"
+              class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors shadow-sm flex items-center gap-2"
+              [ngClass]="isEditMode ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 dark:bg-gray-700 dark:text-white dark:border-gray-600'">
+              {{ isEditMode ? 'Save Changes' : 'Edit Mode' }}
+            </button>
+
+            <button *ngIf="currentUser?.role === 'admin'" (click)="deleteProject()"
+              class="p-1.5 text-gray-400 hover:text-red-600 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 transition"
+              title="Delete Project">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
                 stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 2 0 00-1 1v3M4 7h16" />
               </svg>
-              Add Task
             </button>
           </div>
+        </div>
+      </div>
 
-          <div class="space-y-3">
-            <div *ngFor="let task of stage.tasks"
-              class="group flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700 hover:shadow-sm transition-shadow">
+      <!-- Progress Bar -->
+      <div class="mt-6">
+        <div class="flex justify-between items-center mb-2 text-sm">
+          <span class="font-medium text-gray-700 dark:text-gray-300">Course Progress</span>
+          <span class="font-bold text-gray-900 dark:text-white">{{ project.overallProgress }}%</span>
+        </div>
+        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
+          <div [class]="getProgressBarColorByPercentage(project.overallProgress)"
+            class="h-full transition-all duration-500 relative" [style.width.%]="project.overallProgress">
+            <div class="absolute inset-0 bg-white/20 animate-pulse"></div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-              <!-- Left: Checkbox & Name -->
-              <div class="flex items-center gap-3 flex-1">
-                <!-- Checkbox: Disabled unless user has permission (handled by canEditTask) -->
-                <input type="checkbox" [checked]="task.isCompleted" [disabled]="!canEditTask(task)"
-                  (change)="toggleTaskCompletion(task)"
-                  class="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 disabled:opacity-50 cursor-pointer">
+    <!-- Stages Section -->
+    <div class="p-6 bg-gray-50 dark:bg-gray-900/30">
+      <div class="space-y-4">
+        <div *ngFor="let stage of project.stages"
+          class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
 
-                <!-- Name: View/Edit Logic -->
-                <ng-container *ngIf="isEditMode && canManageProject; else viewName">
-                  <input [(ngModel)]="task.name" (blur)="updateTask(task)" (input)="onFieldChange()"
-                    class="flex-1 px-2 py-1 text-sm border border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+          <!-- Stage Header -->
+          <div (click)="toggleStage(stage)"
+            class="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors border-l-4"
+            [ngClass]="{'border-l-blue-500': stage.progress < 100, 'border-l-green-500': stage.progress === 100}">
+
+            <div class="flex-1">
+              <div class="flex items-center gap-3">
+                <h3 class="font-semibold text-gray-800 dark:text-gray-100">{{ stage.name }}</h3>
+                <span
+                  class="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                  {{ stage.progress }}%
+                </span>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <!-- Avatars Preview -->
+              <div class="flex -space-x-2 mr-4">
+                <ng-container *ngFor="let user of stage.assignedTeamMembers | slice:0:3">
+                  <img [src]="user.avatar || 'assets/default-avatar.png'"
+                    class="w-6 h-6 rounded-full border-2 border-white dark:border-gray-800" [title]="user.name">
                 </ng-container>
-                <ng-template #viewName>
-                  <span class="text-gray-800 dark:text-gray-200 font-medium" [class.line-through]="task.isCompleted"
-                    [class.text-gray-500]="task.isCompleted">
-                    {{ task.name }}
-                  </span>
-                </ng-template>
+                <span *ngIf="stage.assignedTeamMembers.length > 3"
+                  class="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-[10px] border-2 border-white dark:border-gray-800">
+                  +{{ stage.assignedTeamMembers.length - 3 }}
+                </span>
               </div>
 
-              <!-- Right: Meta Info & Actions -->
-              <div class="flex items-center gap-4">
-                <!-- Status Badge (Dynamic Color) -->
-                <span [class]="getStatusBadgeClass(getTaskStatus(task))">{{ getTaskStatus(task).label }}</span>
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 transition-transform duration-200"
+                [class.rotate-180]="stage.isOpen" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
 
-                <!-- Date: View/Edit Logic -->
-                <ng-container *ngIf="isEditMode && canManageProject; else viewDate">
-                  <input type="date" [ngModel]="task.endDate | date:'yyyy-MM-dd'"
-                    [max]="project.deadline | date:'yyyy-MM-dd'"
-                    (ngModelChange)="task.endDate = $event; updateTask(task); onFieldChange()"
-                    class="text-xs border border-gray-300 rounded px-2 py-1 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                </ng-container>
-                <ng-template #viewDate>
-                  <span class="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
-                    {{ task.endDate | date:'MMM d' }}
+          <!-- Stage Content -->
+          <div *ngIf="stage.isOpen" class="border-t border-gray-100 dark:border-gray-700">
+            <!-- Assigned Team -->
+            <div
+              class="px-4 py-3 bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+              <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Team Members</span>
+              <div class="flex items-center gap-2">
+                <div class="flex -space-x-2">
+                  <div *ngFor="let user of stage.assignedTeamMembers" class="relative group">
+                    <img [src]="user.avatar || 'assets/default-avatar.png'"
+                      class="w-8 h-8 rounded-full border-2 border-white dark:border-gray-800 cursor-help">
+
+                    <button *ngIf="isEditMode && canManageProject" (click)="removeUserFromStage(stage, user)"
+                      class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
+                      &times;
+                    </button>
+                  </div>
+                  <span *ngIf="stage.assignedTeamMembers.length === 0" class="text-sm text-gray-400 italic">No members
+                    assigned</span>
+                </div>
+                <!-- Add Member (Implicitly handled via task assignment or separate flow if needed, keeping simple for now) -->
+              </div>
+            </div>
+
+            <!-- Tasks List -->
+            <div class="p-4 space-y-2">
+              <div *ngFor="let task of stage.tasks"
+                class="group flex items-center justify-between p-3 rounded-lg border border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-800 hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-all">
+
+                <div class="flex items-center gap-3 flex-1">
+                  <input type="checkbox" [checked]="task.isCompleted" [disabled]="!canEditTask(task)"
+                    (change)="toggleTaskCompletion(task)"
+                    class="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer">
+
+                  <div class="flex-1">
+                    <ng-container *ngIf="isEditMode && canManageProject; else viewTaskName">
+                      <input [(ngModel)]="task.name" (blur)="updateTask(task)" (input)="onFieldChange()"
+                        class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+                    </ng-container>
+                    <ng-template #viewTaskName>
+                      <span class="text-sm font-medium text-gray-700 dark:text-gray-200"
+                        [class.line-through]="task.isCompleted" [class.opacity-60]="task.isCompleted">
+                        {{ task.name }}
+                      </span>
+                    </ng-template>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-4 text-xs">
+                  <!-- Status Badge -->
+                  <span [class]="getStatusBadgeClass(getTaskStatus(task))"
+                    class="px-2 py-0.5 rounded-full border border-opacity-20">
+                    {{ getTaskStatus(task).label }}
                   </span>
-                </ng-template>
 
-                <!-- Avatars (Restored) -->
-                <div class="flex items-center -space-x-2">
-                  <ng-container *ngFor="let user of task.assignedTeamMembers">
-                    <div class="relative group/avatar">
-                      <div
-                        class="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center text-xs ring-2 ring-white dark:ring-gray-800"
-                        [title]="user.name">
-                        <img *ngIf="user.avatar" [src]="user.avatar" class="w-full h-full rounded-full object-cover">
-                        <span *ngIf="!user.avatar">{{ user.name.charAt(0) }}</span>
-                      </div>
-                      <!-- Remove Button (Only in Edit Mode) -->
+                  <!-- Due Date -->
+                  <div class="flex items-center gap-1 text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24"
+                      stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <ng-container *ngIf="isEditMode && canManageProject; else viewDate">
+                      <input type="date" [ngModel]="task.endDate | date:'yyyy-MM-dd'"
+                        (ngModelChange)="task.endDate = $event; updateTask(task); onFieldChange()"
+                        class="border rounded px-1 py-0.5">
+                    </ng-container>
+                    <ng-template #viewDate>
+                      <span>{{ task.endDate | date:'MMM d' }}</span>
+                    </ng-template>
+                  </div>
+
+                  <!-- Assignee Avatar -->
+                  <div class="flex -space-x-1">
+                    <div *ngFor="let user of task.assignedTeamMembers" class="relative group/user">
+                      <img [src]="user.avatar || 'assets/default-avatar.png'"
+                        class="w-6 h-6 rounded-full border border-white dark:border-gray-800" [title]="user.name">
                       <button *ngIf="isEditMode && canManageProject" (click)="removeUserFromTask(task, user)"
-                        class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-3 h-3 flex items-center justify-center text-[10px] opacity-0 group-hover/avatar:opacity-100 transition-opacity"
-                        title="Remove user">
+                        class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-3 h-3 flex items-center justify-center opacity-0 group-hover/user:opacity-100">
                         &times;
                       </button>
                     </div>
-                  </ng-container>
+                  </div>
+
+                  <!-- Assign Dropdown (Edit Mode) -->
+                  <select *ngIf="isEditMode && canManageProject"
+                    (change)="assignUserToTask(task, $event); onFieldChange()"
+                    class="w-4 h-4 opacity-0 absolute inset-0 cursor-pointer">
+                    <!-- Hidden overlay trick or just standard select -->
+                  </select>
+                  <select *ngIf="isEditMode && canManageProject"
+                    (change)="assignUserToTask(task, $event); onFieldChange()"
+                    class="bg-gray-100 border-none rounded px-1 py-0.5 text-xs w-20 truncate">
+                    <option value="">+ Assign</option>
+                    <option *ngFor="let user of availableManagers" [value]="user.id">{{ user.name }}</option>
+                  </select>
                 </div>
-
-                <!-- Assign Dropdown (Restored: Visible only in Edit Mode) -->
-                <select *ngIf="isEditMode && canManageProject"
-                  (change)="assignUserToTask(task, $event); onFieldChange()"
-                  class="text-xs bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 rounded focus:ring-blue-500 focus:border-blue-500 py-1 pl-2 pr-6">
-                  <option value="">Assign...</option>
-                  <option *ngFor="let user of availableManagers" [value]="user.id">
-                    {{ user.name }}
-                  </option>
-                </select>
               </div>
-            </div>
 
-            <div *ngIf="stage.tasks.length === 0" class="text-center py-4 text-gray-500 dark:text-gray-400">
-              No tasks in this stage yet.
+              <div *ngIf="stage.tasks.length === 0"
+                class="text-center py-6 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg">
+                <p class="text-sm text-gray-500">No tasks created yet.</p>
+              </div>
+
+              <!-- Add Task Button -->
+              <button *ngIf="isEditMode && canManageProject" (click)="openTaskModal(stage.id)"
+                class="w-full py-2 mt-2 text-sm text-blue-600 border border-dashed border-blue-300 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                  stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Add New Task
+              </button>
             </div>
           </div>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- Comments Section Removed as per user request -->
+  <!-- <app-comments [projectId]="project.id"></app-comments> -->
 </div>

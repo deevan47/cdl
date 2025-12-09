@@ -1,6 +1,8 @@
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ProjectService } from '../../services/project.service';
+import { TaskService } from '../../services/task.service';
+import { User } from '../../models/user.model';
 
 @Component({
   selector: 'app-task-modal',
@@ -9,6 +11,7 @@ import { ProjectService } from '../../services/project.service';
 })
 export class TaskModalComponent implements OnInit {
   @Input() stageId!: string;
+  @Input() availableManagers: User[] = [];
   @Output() taskCreated = new EventEmitter<void>();
   @Output() modalClosed = new EventEmitter<void>();
 
@@ -17,14 +20,16 @@ export class TaskModalComponent implements OnInit {
 
   constructor(
     private fb: FormBuilder,
-    private projectService: ProjectService
+    private projectService: ProjectService,
+    private taskService: TaskService
   ) {
     this.taskForm = this.fb.group({
       name: ['', Validators.required],
-      description: [''],
+      // description: [''], // Removed
       startDate: ['', Validators.required],
       endDate: ['', Validators.required],
-      estimatedHours: [0, [Validators.min(0)]]
+      // estimatedHours: [0, [Validators.min(0)]], // Removed
+      assignedUserId: [''] // Added
     });
   }
 
@@ -32,7 +37,7 @@ export class TaskModalComponent implements OnInit {
     // Set default dates
     const today = new Date();
     const oneWeekLater = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-    
+
     this.taskForm.patchValue({
       startDate: today.toISOString().split('T')[0],
       endDate: oneWeekLater.toISOString().split('T')[0]
@@ -41,19 +46,36 @@ export class TaskModalComponent implements OnInit {
 
   onSubmit() {
     if (this.taskForm.valid) {
+      const formValue = this.taskForm.value;
       const taskData = {
-        ...this.taskForm.value,
-        startDate: new Date(this.taskForm.value.startDate),
-        endDate: new Date(this.taskForm.value.endDate),
+        name: formValue.name,
+        startDate: new Date(formValue.startDate),
+        endDate: new Date(formValue.endDate),
         isCompleted: false,
         status: 'on_track'
       };
 
       this.projectService.addTaskToStage(this.stageId, taskData)
         .subscribe({
-          next: () => {
-            this.taskCreated.emit();
-            this.closeModal();
+          next: (createdTask) => {
+            // If user is selected, assign them
+            if (formValue.assignedUserId) {
+              this.taskService.assignUserToTask(createdTask.id, formValue.assignedUserId).subscribe({
+                next: () => {
+                  this.taskCreated.emit();
+                  this.closeModal();
+                },
+                error: (err) => {
+                  console.error('Error assigning user to task:', err);
+                  // Emit anyway since task was created
+                  this.taskCreated.emit();
+                  this.closeModal();
+                }
+              });
+            } else {
+              this.taskCreated.emit();
+              this.closeModal();
+            }
           },
           error: (error) => console.error('Error creating task:', error)
         });

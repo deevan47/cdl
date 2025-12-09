@@ -10,11 +10,11 @@
 
     <div *ngIf="!loading && project" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
         <!-- We reuse the existing ProjectDetailComponent but we need to make sure it's exported/imported -->
-        <app-project-detail [project]="project" [availableManagers]="availableManagers"
-            [currentUser]="currentUser" (taskModalRequested)="openTaskModal($event)"></app-project-detail>
+        <app-project-detail [project]="project" [availableManagers]="availableManagers" [currentUser]="currentUser"
+            [isFullPage]="true" (taskModalRequested)="openTaskModal($event)"></app-project-detail>
 
         <div class="p-6 border-t border-gray-200 dark:border-gray-700">
-            <app-comments [projectId]="project.id"></app-comments>
+            <!-- <app-comments [projectId]="project.id"></app-comments> -->
         </div>
     </div>
 

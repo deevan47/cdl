@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
 import { CommentService } from '../../services/comment.service';
 import { AuthService } from '../../services/auth.service';
 import { Comment } from '../../models/comment.model';
@@ -9,36 +9,28 @@ import { User } from '../../models/user.model';
     templateUrl: './comments.component.html',
     styleUrls: ['./comments.component.css']
 })
-export class CommentsComponent implements OnInit, OnChanges {
-    @Input() projectId!: string;
+export class CommentsComponent implements OnInit {
+    @Input() projectId: string = '';
     comments: Comment[] = [];
-    newCommentText = '';
+    newCommentContent = '';
     currentUser: User | null = null;
     loading = false;
 
     constructor(
         private commentService: CommentService,
         private authService: AuthService
-    ) {
-        const user = this.authService.currentUserValue;
-        this.currentUser = user?.user ? user.user : user;
-    }
+    ) { }
 
     ngOnInit() {
+        this.authService.currentUser.subscribe(user => {
+            this.currentUser = user ? (user.user || user) : null;
+        });
         if (this.projectId) {
             this.loadComments();
         }
     }
 
-    ngOnChanges(changes: SimpleChanges) {
-        if (changes['projectId'] && !changes['projectId'].firstChange) {
-            this.loadComments();
-        }
-    }
-
     loadComments() {
-        if (!this.projectId) return;
-
         this.loading = true;
         this.commentService.getComments(this.projectId).subscribe({
             next: (comments) => {
@@ -53,22 +45,14 @@ export class CommentsComponent implements OnInit, OnChanges {
     }
 
     addComment() {
-        if (!this.newCommentText.trim() || !this.projectId) return;
+        if (!this.newCommentContent.trim()) return;
 
-        this.commentService.createComment(this.projectId, this.newCommentText).subscribe({
+        this.commentService.createComment(this.projectId, this.newCommentContent).subscribe({
             next: (comment) => {
-                // The backend returns the comment with the user relation populated
-                // But just in case, we can ensure the current user is attached for immediate display
-                if (!comment.user && this.currentUser) {
-                    comment.user = this.currentUser;
-                }
-                this.comments.unshift(comment);
-                this.newCommentText = '';
+                this.comments.unshift(comment); // Add to top
+                this.newCommentContent = '';
             },
-            error: (err) => {
-                console.error('Error adding comment:', err);
-                alert('Failed to post comment. Please try again.');
-            }
+            error: (err) => console.error('Error adding comment:', err)
         });
     }
 }

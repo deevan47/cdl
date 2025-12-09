@@ -14,6 +14,11 @@ const routes: Routes = [
 
   // Unified Dashboard Route
   {
+    path: 'dashboard/:section',
+    component: DashboardWrapperComponent,
+    canActivate: [AuthGuard]
+  },
+  {
     path: 'dashboard',
     component: DashboardWrapperComponent,
     canActivate: [AuthGuard]

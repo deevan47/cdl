@@ -1,5 +1,5 @@
 import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Project, ProjectStage, Task, ProjectStatus } from '../../models/project.model';
 import { User } from '../../models/user.model';
 import { ProjectService } from '../../services/project.service';
@@ -15,6 +15,7 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
   @Input() project: Project | null = null;
   @Input() availableManagers: User[] = []; // Restored Input
   @Input() currentUser: User | null = null; // Restored Input
+  @Input() isFullPage: boolean = false;
   @Output() projectUpdated = new EventEmitter<Project>();
   @Output() projectDeleted = new EventEmitter<string>();
   @Output() taskModalRequested = new EventEmitter<string>();
@@ -29,9 +30,28 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
     private route: ActivatedRoute,
     private projectService: ProjectService,
     private authService: AuthService,
-    private taskService: TaskService
+    private taskService: TaskService,
+    private router: Router
   ) { }
 
+  openFullView() {
+    if (this.project) {
+      this.router.navigate(['/projects', this.project.id]);
+    }
+  }
+
+  navigateToPlatform() {
+    if (this.project && this.project.platform) {
+      this.router.navigate(['/dashboard'], {
+        queryParams: {
+          tab: 'projects',
+          view: this.project.platform.toLowerCase()
+        }
+      });
+    } else {
+      this.router.navigate(['/dashboard']);
+    }
+  }
   ngOnInit() {
     if (this.project) {
       this.editedProjectName = this.project.name;
@@ -95,34 +115,37 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
     if (!this.project || !this.project.stages) return;
 
     let totalProgress = 0;
-    const platform = this.project.platform.toLowerCase();
+    const platform = (this.project.platform || '').toLowerCase().trim();
 
     // Define Weights
     let weights: { [key: string]: number } = {};
     if (platform === 'flame') {
       weights = {
         'pre-production': 30,
-        'production': 40,
-        'post-production': 30
+        'production': 20,
+        'post-production': 50
       };
     } else if (platform === 'swayam') {
       weights = {
-        'production': 50,
-        'post-production': 50
+        'production': 40,
+        'post-production': 60
       };
     } else {
       // Default equal weights if unknown
       const count = this.project.stages.length;
-      this.project.stages.forEach(s => weights[s.name.toLowerCase()] = 100 / count);
+      this.project.stages.forEach(s => weights[s.name.toLowerCase().trim()] = 100 / count);
     }
+
+    console.log('Calculating progress for:', this.project.name, 'Platform:', platform);
 
     // Calculate
     this.project.stages.forEach(stage => {
-      const stageName = stage.name.toLowerCase();
+      const stageName = (stage.name || '').toLowerCase().trim();
       const weight = weights[stageName] || 0;
 
       if (stage.tasks && stage.tasks.length > 0) {
-        const completedTasks = stage.tasks.filter(t => t.isCompleted).length;
+        // Ensure we handle boolean or string 'true'
+        const completedTasks = stage.tasks.filter(t => t.isCompleted === true || String(t.isCompleted) === 'true').length;
         const stageProgress = (completedTasks / stage.tasks.length) * 100;
 
         // Update stage progress
@@ -130,6 +153,8 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
 
         // Add weighted contribution
         totalProgress += (stageProgress / 100) * weight;
+
+        console.log(`Stage: ${stageName}, Tasks: ${completedTasks}/${stage.tasks.length}, Progress: ${stage.progress}%, Weight: ${weight}`);
       } else {
         // If no tasks, assume 0% for that stage (or keep existing if manual)
         stage.progress = 0;
@@ -137,6 +162,7 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
     });
 
     this.project.overallProgress = Math.round(totalProgress);
+    console.log('Total Progress:', this.project.overallProgress);
     this.updateProjectStatus();
   }
 
@@ -385,10 +411,20 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
             const taskIndex = stage.tasks.findIndex(t => t.id === task.id);
             if (taskIndex !== -1) stage.tasks[taskIndex] = updatedTask;
           }
-          // Recalculate locally for immediate feedback
+          // Recalculate locally
           this.calculateProgress();
-          // Also sync with backend if needed, but local calc is faster
-          // this.projectService.calculateProjectHealth(this.project.id).subscribe();
+
+          // CRITICAL: Save the updated project progress and status to the backend
+          this.projectService.updateProject(this.project.id, {
+            overallProgress: this.project.overallProgress,
+            status: this.project.status
+          }).subscribe({
+            next: (updatedProject) => {
+              console.log('Project progress saved:', updatedProject.overallProgress);
+              // Optionally update local project if backend returns something different
+            },
+            error: (err) => console.error('Error saving project progress:', err)
+          });
         }
       },
       error: (error) => console.error('Error updating task status:', error)

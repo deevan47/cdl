@@ -1,46 +1,50 @@
-<div class="mt-8">
-  <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Project Discussion</h3>
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+  <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Project Comments</h3>
 
-  <!-- Comment Form -->
-  <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-6">
-    <textarea [(ngModel)]="newCommentText"
-      class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
-      rows="3" placeholder="Write a comment..."></textarea>
-
-    <div class="flex justify-end items-center mt-3">
-      <button (click)="addComment()" [disabled]="!newCommentText.trim()"
-        class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition">
-        Post Comment
-      </button>
+  <!-- Input Area -->
+  <div class="flex gap-4 mb-6">
+    <img [src]="currentUser?.avatar || 'assets/default-avatar.png'" class="w-10 h-10 rounded-full object-cover">
+    <div class="flex-1">
+      <textarea [(ngModel)]="newCommentContent" placeholder="Add a comment..."
+        class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none h-24"></textarea>
+      <div class="flex justify-end mt-2">
+        <button (click)="addComment()" [disabled]="!newCommentContent.trim()"
+          class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+          Post Comment
+        </button>
+      </div>
     </div>
   </div>
 
-  <!-- Comments List -->
-  <div class="space-y-4">
+  <!-- Comments List Container -->
+  <div class="space-y-6">
+
+    <!-- Loading Spinner -->
     <div *ngIf="loading" class="text-center py-4">
-      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
     </div>
 
-    <div *ngFor="let comment of comments"
-      class="p-4 rounded-lg border-l-4 bg-white dark:bg-gray-800 border-blue-500 shadow-sm">
-      <div class="flex justify-between items-start mb-2">
-        <div class="flex items-center gap-2">
-          <div
-            class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-xs font-bold text-white overflow-hidden">
-            <img *ngIf="comment.user?.avatar" [src]="comment.user.avatar" class="w-full h-full object-cover">
-            <span *ngIf="!comment.user?.avatar">{{ comment.user?.name?.charAt(0) | uppercase }}</span>
-          </div>
-          <div class="flex flex-col">
-            <span class="font-semibold text-sm text-gray-800 dark:text-gray-200">{{ comment.user?.name }}</span>
-            <span class="text-xs text-gray-500">{{ comment.createdAt | date:'medium' }}</span>
+    <!-- Actual Comments List (Only show when not loading or if we have comments) -->
+    <ng-container *ngIf="!loading">
+      <div *ngFor="let comment of comments" class="flex gap-4">
+        <img [src]="comment.user?.avatar || 'assets/default-avatar.png'" class="w-10 h-10 rounded-full object-cover">
+        <div class="flex-1">
+          <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+            <div class="flex justify-between items-start mb-1">
+              <span class="font-semibold text-gray-900 dark:text-white">{{ comment.user?.name || 'Unknown User'
+                }}</span>
+              <span class="text-xs text-gray-500 dark:text-gray-400">{{ comment.createdAt | date:'medium' }}</span>
+            </div>
+            <p class="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ comment.content }}</p>
           </div>
         </div>
       </div>
-      <p class="text-sm whitespace-pre-wrap text-gray-700 dark:text-gray-300 mt-2">{{ comment.content }}</p>
-    </div>
 
-    <div *ngIf="!loading && comments.length === 0" class="text-center text-gray-500 italic">
-      No comments yet. Be the first to start the discussion!
-    </div>
+      <!-- Empty State -->
+      <div *ngIf="comments.length === 0" class="text-center py-8 text-gray-500 dark:text-gray-400">
+        No comments yet. Be the first to start the discussion!
+      </div>
+    </ng-container>
+
   </div>
 </div>

@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { ProjectService } from '../../shared/services/project.service';
 import { Project, ProjectStatus } from '../../shared/models/project.model';
 import { User } from '../../shared/models/user.model';
@@ -51,7 +51,8 @@ export class UserDashboardComponent implements OnInit {
     private sanitizer: DomSanitizer,
     private projectService: ProjectService,
     private router: Router,
-    private authService: AuthService
+    private authService: AuthService,
+    private route: ActivatedRoute
   ) { }
 
   logout() {
@@ -72,6 +73,14 @@ export class UserDashboardComponent implements OnInit {
       this.isDarkMode = false;
       document.documentElement.classList.remove('dark');
     }
+    this.route.params.subscribe(params => {
+      const section = params['section'];
+      if (section && ['home', 'flame', 'swayam', 'profile', 'settings', 'notifications', 'messages'].includes(section)) {
+        this.currentView = section;
+      } else {
+        this.currentView = 'home';
+      }
+    });
   }
 
   loadUser() {
@@ -146,13 +155,12 @@ export class UserDashboardComponent implements OnInit {
       this.router.navigate(['/projects', projectId]);
       return;
     }
-    this.currentView = view as any;
-    this.selectedProject = null;
+    this.router.navigate(['/dashboard', view]);
   }
 
   goBack() {
     this.selectedProject = null;
-    this.currentView = 'home';
+    this.router.navigate(['/dashboard', 'home']);
   }
 
   selectProject(project: Project) {

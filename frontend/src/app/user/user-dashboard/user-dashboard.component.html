@@ -15,7 +15,7 @@
             </div>
             <div class="mt-2 text-center">
                 <h4 class="font-medium text-gray-800 dark:text-gray-200">{{ currentUser?.name }}</h4>
-                <p class="text-sm text-gray-600 dark:text-gray-400">{{ currentUser?.role }}</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">{{ currentUser?.role | uppercase }}</p>
             </div>
         </div>
 
@@ -106,12 +106,12 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                     <div (click)="navigateTo('flame')"
                         class="p-8 rounded-xl bg-gradient-to-br from-orange-400 to-red-500 text-white shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 cursor-pointer">
-                        <h2 class="text-4xl font-bold">Flame</h2>
+                        <h2 class="text-4xl font-bold">FLAME</h2>
                         <p class="mt-2 text-lg opacity-80">Internal Creative Projects</p>
                     </div>
                     <div (click)="navigateTo('swayam')"
                         class="p-8 rounded-xl bg-gradient-to-br from-blue-400 to-indigo-500 text-white shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 cursor-pointer">
-                        <h2 class="text-4xl font-bold">Swayam</h2>
+                        <h2 class="text-4xl font-bold">SWAYAM</h2>
                         <p class="mt-2 text-lg opacity-80">External Educational Courses</p>
                     </div>
                 </div>
