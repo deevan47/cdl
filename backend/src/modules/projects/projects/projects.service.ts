@@ -10,6 +10,9 @@ import { CreateProjectDto } from './dto/create-project-dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 
 @Injectable()
+/**
+ * Service for handling project business logic including creation, progress calculation, and assignments.
+ */
 export class ProjectsService {
   async assignUsersToStage(stageId: string, userIds: string[]): Promise<ProjectStage> {
     const stage = await this.stagesRepository.findOne({ where: { id: stageId }, relations: ['assignedTeamMembers'] });
@@ -106,7 +109,6 @@ export class ProjectsService {
       this.logger.log('create: No project manager ID provided');
     }
 
-    // If no manager, manager stays null (allowed by DB and entity)
     const project = this.projectsRepository.create({
       name: createProjectDto.name,
       platform: createProjectDto.platform,
@@ -117,21 +119,18 @@ export class ProjectsService {
     const savedProject = await this.projectsRepository.save(project);
     this.logger.log(`create: Project saved with ID ${savedProject.id}, Manager: ${savedProject.projectManager?.id}`);
 
-    // Create default stages based on project platform
     const stages = this.createDefaultStages(savedProject, savedProject.platform);
     await this.stagesRepository.save(stages);
     return this.findOne(savedProject.id);
   }
 
   private createDefaultStages(project: Project, platform: ProjectPlatform): ProjectStage[] {
-    // Platform-specific templates
     let stageNames: StageName[] = [];
     if (platform === ProjectPlatform.FLAME) {
       stageNames = [StageName.PRE_PRODUCTION, StageName.PRODUCTION, StageName.POST_PRODUCTION];
     } else if (platform === ProjectPlatform.SWAYAM) {
       stageNames = [StageName.PRODUCTION, StageName.POST_PRODUCTION];
     } else {
-      // fallback to a safe default
       stageNames = [StageName.PRODUCTION, StageName.POST_PRODUCTION];
     }
 
@@ -143,7 +142,7 @@ export class ProjectsService {
         progress: 0,
         status: StageStatus.ON_TRACK,
         tasks: [],
-        assignedTeamMembers: [], // Project manager will assign users later
+        assignedTeamMembers: [],
       });
     });
   }
@@ -187,12 +186,10 @@ export class ProjectsService {
       await this.calculateStageHealth(stage);
     }
 
-    // Weighted Progress Calculation
     let totalProgress = 0;
     let totalWeight = 0;
 
     if (project.platform === ProjectPlatform.SWAYAM) {
-      // Swayam: Production (40%), Post-Production (60%)
       for (const stage of project.stages) {
         if (stage.name === StageName.PRODUCTION) {
           totalProgress += stage.progress * 0.4;
@@ -203,7 +200,6 @@ export class ProjectsService {
         }
       }
     } else if (project.platform === ProjectPlatform.FLAME) {
-      // Flame: Pre (30%), Prod (30%), Post (40%)
       for (const stage of project.stages) {
         if (stage.name === StageName.PRE_PRODUCTION) {
           totalProgress += stage.progress * 0.3;
@@ -217,7 +213,6 @@ export class ProjectsService {
         }
       }
     } else {
-      // Default: Equal weighting
       const weight = 1 / project.stages.length;
       for (const stage of project.stages) {
         totalProgress += stage.progress * weight;
@@ -225,11 +220,8 @@ export class ProjectsService {
       }
     }
 
-    // Normalize if weights don't add up to 1 (e.g. missing stages)
-    // If totalWeight is 0 (no matching stages), progress is 0
     const finalProgress = totalWeight > 0 ? (totalProgress / totalWeight) : 0;
 
-    // Determine Status
     let status = ProjectStatus.SETUP;
     const today = new Date();
     const deadline = project.deadline ? new Date(project.deadline) : null;
@@ -238,35 +230,11 @@ export class ProjectsService {
       status = ProjectStatus.COMPLETED;
     } else if (deadline && today > deadline) {
       status = ProjectStatus.LAGGING;
-    } else if (deadline && (deadline.getTime() - today.getTime()) / (1000 * 3600 * 24) <= 7) {
-      status = ProjectStatus.AT_RISK;
-    } else if (finalProgress > 0) {
-      status = ProjectStatus.IN_PROGRESS;
-    } else if (project.projectManager) {
-      // If PM is assigned but 0 progress, it's technically SETUP or IN_PROGRESS depending on interpretation
-      // User said: "if the admin gave access to the PM its setup"
-      // But if it's 0% it might stay SETUP until they do something.
-      // Let's keep it as SETUP if 0%, or IN_PROGRESS if explicitly set.
-      // Actually, let's stick to the user's rule: "if its started moving should be inprogress" -> implies 0% is SETUP
-      status = ProjectStatus.SETUP;
-    }
-
-    // Override if previously set to IN_PROGRESS and still 0%? 
-    // The user said "if the admin gave access to the PM its setup".
-    // So if PM is assigned, it is SETUP.
-    // "if its started moving should be inprogress" -> Progress > 0.
-
-    // Refined Logic:
-    if (finalProgress >= 100) {
-      status = ProjectStatus.COMPLETED;
-    } else if (deadline && today > deadline) {
-      status = ProjectStatus.LAGGING;
-    } else if (deadline && (deadline.getTime() - today.getTime()) / (1000 * 3600 * 24) <= 7) {
+    } else if (deadline && (deadline.getTime() - today.getTime()) / (1000 * 3600 * 24) <= 14) {
       status = ProjectStatus.AT_RISK;
     } else if (finalProgress > 0) {
       status = ProjectStatus.IN_PROGRESS;
     } else {
-      // 0% progress
       status = ProjectStatus.SETUP;
     }
 
@@ -290,7 +258,6 @@ export class ProjectsService {
 
     stage.progress = progress;
 
-    // Determine stage status
     const today = new Date();
     let hasOverdue = false;
     let hasAtRisk = false;
@@ -304,7 +271,7 @@ export class ProjectsService {
         if (daysDiff < 0) {
           hasOverdue = true;
           task.status = TaskStatus.OVERDUE;
-        } else if (daysDiff <= 7) {
+        } else if (daysDiff <= 14) {
           hasAtRisk = true;
           task.status = TaskStatus.AT_RISK;
         } else {

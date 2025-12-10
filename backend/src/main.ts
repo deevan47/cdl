@@ -35,7 +35,7 @@ async function bootstrap() {
       next();
     });
 
-    await app.listen(3000);
+    await app.listen(3000, '0.0.0.0');
     logger.log('🚀 CDL Project Management Backend is running on: http://localhost:3000');
   } catch (err) {
     // ... your error handling ...

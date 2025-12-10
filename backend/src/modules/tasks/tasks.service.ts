@@ -5,6 +5,9 @@ import { Task } from './entities/task.entity';
 import { User } from '../users/entities/user.entity';
 
 @Injectable()
+/**
+ * Service for managing tasks, including creation, updates, and user assignments.
+ */
 export class TasksService {
   constructor(
     @InjectRepository(Task)
@@ -63,12 +66,10 @@ export class TasksService {
       throw new NotFoundException(`User with ID "${userId}" not found`);
     }
 
-    // Initialize array if undefined
     if (!task.assignedTeamMembers) {
       task.assignedTeamMembers = [];
     }
 
-    // Check if already assigned
     if (!task.assignedTeamMembers.some(u => u.id === userId)) {
       task.assignedTeamMembers.push(user);
     }
