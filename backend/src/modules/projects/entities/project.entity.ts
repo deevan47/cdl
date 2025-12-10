@@ -77,6 +77,12 @@ export class Project {
   @OneToMany(() => Comment, (comment) => comment.project, { cascade: true })
   comments: Comment[];
 
+  @Column({ name: 'start_date', type: 'date', nullable: true })
+  startDate: Date;
+
+  @Column({ name: 'end_date', type: 'date', nullable: true })
+  endDate: Date;
+
   @Column({ type: 'date', nullable: true })
   deadline: Date;
 

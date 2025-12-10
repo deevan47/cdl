@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 
 @Component({
   selector: 'app-root',
@@ -9,6 +9,15 @@ import { Component } from '@angular/core';
   `,
   styleUrls: ['./app.component.css']
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
   title = 'CDL Project Management';
+
+  ngOnInit() {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }
 }

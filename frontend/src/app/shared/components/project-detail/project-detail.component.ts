@@ -13,8 +13,8 @@ import { TaskService } from '../../services/task.service';
 })
 export class ProjectDetailComponent implements OnInit, OnChanges {
   @Input() project: Project | null = null;
-  @Input() availableManagers: User[] = []; // Restored Input
-  @Input() currentUser: User | null = null; // Restored Input
+  @Input() availableManagers: User[] = [];
+  @Input() currentUser: User | null = null;
   @Input() isFullPage: boolean = false;
   @Output() projectUpdated = new EventEmitter<Project>();
   @Output() projectDeleted = new EventEmitter<string>();
@@ -55,6 +55,7 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
   ngOnInit() {
     if (this.project) {
       this.editedProjectName = this.project.name;
+      this.calculateProgress(); // Calculate on init
     }
   }
 
@@ -62,6 +63,7 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
     if (changes['project'] && this.project) {
       this.editedProjectName = this.project.name;
       this.sortStages();
+      this.calculateProgress(); // Calculate whenever project data updates
     }
   }
 
@@ -97,7 +99,6 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
   saveProjectChanges() {
     if (!this.project) return;
 
-    // Recalculate progress before saving
     this.calculateProgress();
 
     this.projectService.updateProject(this.project.id, this.project).subscribe({
@@ -117,7 +118,7 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
     let totalProgress = 0;
     const platform = (this.project.platform || '').toLowerCase().trim();
 
-    // Define Weights
+    // Define weights based on platform or default to equal distribution
     let weights: { [key: string]: number } = {};
     if (platform === 'flame') {
       weights = {
@@ -138,7 +139,7 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
 
     console.log('Calculating progress for:', this.project.name, 'Platform:', platform);
 
-    // Calculate
+
     this.project.stages.forEach(stage => {
       const stageName = (stage.name || '').toLowerCase().trim();
       const weight = weights[stageName] || 0;
@@ -148,10 +149,9 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
         const completedTasks = stage.tasks.filter(t => t.isCompleted === true || String(t.isCompleted) === 'true').length;
         const stageProgress = (completedTasks / stage.tasks.length) * 100;
 
-        // Update stage progress
         stage.progress = Math.round(stageProgress);
 
-        // Add weighted contribution
+
         totalProgress += (stageProgress / 100) * weight;
 
         console.log(`Stage: ${stageName}, Tasks: ${completedTasks}/${stage.tasks.length}, Progress: ${stage.progress}%, Weight: ${weight}`);
@@ -169,8 +169,8 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
   updateProjectStatus() {
     if (!this.project) return;
 
-    // Determine status based on stages/tasks
-    // Hierarchy: Lagging > At Risk > In Progress > Completed
+    // Determine project status based on task deadlines and completion
+    // Priority: Lagging > At Risk > In Progress > Completed
 
     let hasLagging = false;
     let hasAtRisk = false;
@@ -400,6 +400,8 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
 
   toggleTaskCompletion(task: Task) {
     const newStatus = !task.isCompleted;
+    const originalAssignedMembers = [...(task.assignedTeamMembers || [])]; // Preserve original members
+
     this.taskService.updateTaskStatus(task.id,
       newStatus ? 'completed' : 'on_track' as any,
       newStatus
@@ -409,7 +411,15 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
           const stage = this.project.stages.find(s => s.id === task.stageId);
           if (stage) {
             const taskIndex = stage.tasks.findIndex(t => t.id === task.id);
-            if (taskIndex !== -1) stage.tasks[taskIndex] = updatedTask;
+            if (taskIndex !== -1) {
+              // Preserve assignedTeamMembers if the backend response didn't include them (or included them as empty but we know they shouldn't be)
+              // Note: If the backend logic for status update *clears* assignments, this would hide it, but the user says "unticks... assigned user is removing", which implies a side effect.
+              // If it's just a display issue because the response lacks the population, this fix works.
+              if (!updatedTask.assignedTeamMembers || updatedTask.assignedTeamMembers.length === 0) {
+                updatedTask.assignedTeamMembers = originalAssignedMembers;
+              }
+              stage.tasks[taskIndex] = updatedTask;
+            }
           }
           // Recalculate locally
           this.calculateProgress();
@@ -421,7 +431,6 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
           }).subscribe({
             next: (updatedProject) => {
               console.log('Project progress saved:', updatedProject.overallProgress);
-              // Optionally update local project if backend returns something different
             },
             error: (err) => console.error('Error saving project progress:', err)
           });

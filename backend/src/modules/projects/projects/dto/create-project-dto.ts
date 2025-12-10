@@ -18,5 +18,13 @@ export class CreateProjectDto {
   projectManagerId?: string | null;
 
   @IsDateString()
+  @IsOptional()
+  startDate?: string;
+
+  @IsDateString()
+  @IsOptional()
+  endDate?: string;
+
+  @IsDateString()
   deadline: string;
 }

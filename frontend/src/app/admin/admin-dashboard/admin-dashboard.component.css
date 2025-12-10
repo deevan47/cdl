@@ -6,16 +6,18 @@
   background-color: #f3f4f6;
 }
 
+/* ... (keeping unused classes for safety or future use, but focusing on overrides) ... */
 .sidebar {
   width: 250px;
   background-color: white;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   overflow-y: auto;
+  border-right: 1px solid #cbd5e1;
 }
 
 .sidebar-header {
   padding: 1rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid #cbd5e1;
 }
 
 .nav-item {
@@ -40,6 +42,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  border-bottom: 1px solid #cbd5e1;
 }
 
 .content-area {
@@ -51,13 +54,13 @@
 .projects-list {
   flex: 1;
   max-width: 400px;
-  border-right: 1px solid #e5e7eb;
+  border-right: 1px solid #cbd5e1;
   overflow-y: auto;
 }
 
 .project-item {
   padding: 1rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid #cbd5e1;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -68,54 +71,61 @@
   padding: 1.5rem;
 }
 
-.dark {
+/* Dark mode variables - scoped to host context */
+:host-context(.dark) {
   --bg-primary: #1f2937;
   --bg-secondary: #111827;
-  --text-primary: #f3f4f6;
-  --text-secondary: #d1d5db;
-  --border: #374151;
+  --text-primary: #ffffff;
+  --text-secondary: #f3f4f6;
+  --border: #4b5563;
 }
 
-.dark .sidebar {
+:host-context(.dark) .sidebar {
   background-color: var(--bg-secondary);
   border-right: 1px solid var(--border);
 }
 
-.dark .header {
+:host-context(.dark) .header {
   background-color: var(--bg-secondary);
   color: var(--text-primary);
   border-bottom: 1px solid var(--border);
 }
 
-.dark .projects-list {
+:host-context(.dark) .projects-list {
   background-color: var(--bg-primary);
   border-right-color: var(--border);
 }
 
-.dark .project-item {
+:host-context(.dark) .project-item {
   border-bottom-color: var(--border);
-  color: var(--text-secondary);
+  color: var(--text-primary);
 }
 
-.dark .project-detail {
+:host-context(.dark) .project-detail {
   background-color: var(--bg-primary);
   color: var(--text-primary);
 }
 
-/* Utility Classes */
+/* Utility Classes Overrides for Dark Mode */
 .text-gray-600 {
   color: #4b5563;
 }
 
-.dark .text-gray-600 {
-  color: #9ca3af;
+/* Force all gray text to be white/light in dark mode */
+:host-context(.dark) .text-gray-400,
+:host-context(.dark) .text-gray-500,
+:host-context(.dark) .text-gray-600,
+:host-context(.dark) .text-gray-700,
+:host-context(.dark) .text-gray-800,
+:host-context(.dark) .text-gray-900 {
+  color: var(--text-secondary) !important;
 }
 
 .bg-blue-100 {
   background-color: #dbeafe;
 }
 
-.dark .bg-blue-100 {
+:host-context(.dark) .bg-blue-100 {
   background-color: #1e3a8a;
 }
 
@@ -123,7 +133,7 @@
   color: #1d4ed8;
 }
 
-.dark .text-blue-700 {
+:host-context(.dark) .text-blue-700 {
   color: #93c5fd;
 }
 
@@ -173,11 +183,13 @@
   width: 90%;
   max-height: 80vh;
   overflow-y: auto;
+  border: 1px solid #cbd5e1;
 }
 
-.dark .modal {
+:host-context(.dark) .modal {
   background-color: var(--bg-secondary);
   color: var(--text-primary);
+  border: 1px solid var(--border);
 }
 
 /* Responsive */
@@ -189,7 +201,7 @@
   .sidebar {
     width: 100%;
     max-height: 200px;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid #cbd5e1;
   }
 
   .content-area {
@@ -199,7 +211,7 @@
   .projects-list {
     max-width: none;
     border-right: none;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid #cbd5e1;
     max-height: 300px;
   }
 }

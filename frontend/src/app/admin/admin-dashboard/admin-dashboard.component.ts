@@ -11,38 +11,36 @@ import { Router, ActivatedRoute } from '@angular/router';
   templateUrl: './admin-dashboard.component.html',
   styleUrls: ['./admin-dashboard.component.css']
 })
+
+
 export class AdminDashboardComponent implements OnInit {
   projects: Project[] = [];
   filteredProjects: Project[] = [];
   selectedPlatform: ProjectPlatform | 'all' = 'all';
   currentView: 'home' | 'flame' | 'swayam' = 'home';
-  viewMode: 'list' | 'grid' = 'list'; // Added viewMode
+  viewMode: 'list' | 'grid' = 'list';
   selectedProject: Project | null = null;
   isDarkMode = false;
-  availableManagers: any[] = []; // Users/Managers list
+  availableManagers: any[] = [];
 
-  // Modal & Navigation States
   showTaskModal = false;
   selectedStageId: string = '';
   currentSection: 'dashboard' | 'projects' | 'users' | 'settings' = 'dashboard';
 
-  // Project Creation
   showProjectCreationModal = false;
   selectedPlatformForCreation!: ProjectPlatform;
 
-  // User Management
   showUserCreationModal = false;
   isEditingUser = false;
-  newUser: any = { name: '', email: '', password: '', role: 'user' }; // Initialize for form binding
+  newUser: any = { name: '', email: '', password: '', role: 'user' };
 
-  // Filters
   searchQuery = '';
   selectedStatusFilter = 'all';
   currentUser: User | null = null;
 
   constructor(
     private projectService: ProjectService,
-    private userService: UserService, // Keep UserService injected
+    private userService: UserService,
     public authService: AuthService,
     private router: Router,
     private route: ActivatedRoute
@@ -56,7 +54,6 @@ export class AdminDashboardComponent implements OnInit {
     this.loadProjects();
     this.loadAvailableManagers();
 
-    // Load Theme
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark') {
       this.isDarkMode = true;
@@ -66,7 +63,6 @@ export class AdminDashboardComponent implements OnInit {
       document.documentElement.classList.remove('dark');
     }
 
-    // Handle Query Params for Tabs
     this.route.queryParams.subscribe(params => {
       const tab = params['tab'];
       const view = params['view'];
@@ -77,14 +73,23 @@ export class AdminDashboardComponent implements OnInit {
         this.currentSection = 'dashboard';
       }
 
-      // If we are in 'projects' tab or just 'dashboard', handle view
-      if (view) {
-        this.currentView = view;
-        this.viewMode = (view === 'flame' || view === 'swayam') ? 'grid' : 'list';
-      } else {
-        // Default to 'home' (All Projects) and 'list' view if no specific view requested
-        this.currentView = 'home';
+      if (this.currentSection === 'projects') {
         this.viewMode = 'list';
+        if (view) {
+          this.currentView = view;
+          this.selectedPlatform = view === 'home' ? 'all' : (view as ProjectPlatform);
+        } else {
+          this.currentView = 'home';
+          this.selectedPlatform = 'all';
+        }
+      } else {
+        if (view) {
+          this.currentView = view;
+          this.viewMode = (view === 'flame' || view === 'swayam') ? 'grid' : 'list';
+        } else {
+          this.currentView = 'home';
+          this.viewMode = 'list';
+        }
       }
 
       this.filterProjects();
@@ -97,7 +102,6 @@ export class AdminDashboardComponent implements OnInit {
         this.projects = projects;
         this.filterProjects();
 
-        // Refresh selectedProject if it exists
         if (this.selectedProject) {
           const updated = this.projects.find(p => p.id === this.selectedProject!.id);
           if (updated) {
@@ -124,12 +128,10 @@ export class AdminDashboardComponent implements OnInit {
   filterProjects() {
     let filtered = this.projects;
 
-    // Filter by Platform
     if (this.selectedPlatform !== 'all') {
       filtered = filtered.filter(p => p.platform === this.selectedPlatform);
     }
 
-    // Filter by Search Query
     if (this.searchQuery) {
       const query = this.searchQuery.toLowerCase();
       filtered = filtered.filter(p =>
@@ -138,7 +140,6 @@ export class AdminDashboardComponent implements OnInit {
       );
     }
 
-    // Filter by Status
     if (this.selectedStatusFilter !== 'all') {
       filtered = filtered.filter(p => p.status === this.selectedStatusFilter);
     }
@@ -151,16 +152,21 @@ export class AdminDashboardComponent implements OnInit {
     this.router.navigate(['/projects', projectId]);
   }
 
+  navigateToProfile(userId: string, event: Event) {
+    event.stopPropagation(); // Prevent triggering the project click
+    console.log('Navigating to profile:', userId);
+    this.router.navigate(['/profile', userId]);
+  }
+
   logout() {
     this.authService.logout();
     this.router.navigateByUrl('/auth/login');
   }
 
-  // UI Helper Methods (Missing in original)
   getSectionNavClass(section: string): string {
-    const baseClass = 'w-full text-left px-4 py-2 rounded-lg transition-colors duration-200 flex items-center mb-1';
-    const activeClass = 'bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-medium border-l-4 border-blue-600 dark:border-blue-400';
-    const inactiveClass = 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800';
+    const baseClass = 'w-full text-left px-4 py-3 rounded-lg transition-all duration-200 flex items-center mb-1 font-medium';
+    const activeClass = 'bg-blue-600 text-white shadow-md';
+    const inactiveClass = 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-200';
 
     return `${baseClass} ${this.currentSection === section ? activeClass : inactiveClass}`;
   }
@@ -195,30 +201,47 @@ export class AdminDashboardComponent implements OnInit {
 
     this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { tab: section },
+      queryParams: { tab: section, view: 'home' },
       queryParamsHandling: 'merge',
     });
   }
 
   navigateTo(view: 'home' | 'flame' | 'swayam') {
     this.currentView = view;
-    this.currentSection = 'projects'; // Switch to projects tab
+    this.currentSection = 'dashboard';
 
     if (view === 'home') {
       this.viewMode = 'list';
       this.selectedPlatform = 'all';
     } else {
-      this.viewMode = 'grid'; // Switch to grid view for specific platforms
+      this.viewMode = 'grid';
       this.selectedPlatform = view as ProjectPlatform;
     }
 
     this.filterProjects();
-    this.selectedProject = null; // Reset selected project when changing view
+    this.selectedProject = null;
 
     // Update URL tab
     this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { tab: 'projects' },
+      queryParams: { tab: 'dashboard', view: view },
+      queryParamsHandling: 'merge',
+    });
+  }
+
+  switchProjectView(view: 'home' | 'flame' | 'swayam') {
+    this.currentView = view;
+
+    this.viewMode = 'list';
+    this.selectedPlatform = view === 'home' ? 'all' : (view as ProjectPlatform);
+
+    this.filterProjects();
+    this.selectedProject = null;
+
+    // Update URL tab
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { tab: 'projects', view: view },
       queryParamsHandling: 'merge',
     });
   }
@@ -238,17 +261,66 @@ export class AdminDashboardComponent implements OnInit {
       : 'px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700';
   }
 
-  // Dashboard Stats
   getStats() {
     return {
       total: this.projects.length,
       completed: this.projects.filter(p => p.status === 'completed').length,
       inProgress: this.projects.filter(p => p.status === 'in_progress').length,
-      lagging: this.projects.filter(p => p.status === 'lagging').length
+      lagging: this.projects.filter(p => p.status === 'lagging').length,
+      atRisk: this.projects.filter(p => p.status === 'at_risk').length
     };
   }
 
-  // Platform & Status Styling Helpers
+  downloadCSV() {
+    const headers = [
+      'Project Name',
+      'Course Coordinator',
+      'Project Owner',
+      'Overall Status',
+      'Status-Completed (%)',
+      'Pre-Production Status',
+      'Production Status',
+      'Post-Production Status',
+      'Target Completion Date'
+    ];
+
+    const csvData = this.projects.map(p => {
+      const preProd = p.stages.find(s => s.name === 'Pre-Production');
+      const prod = p.stages.find(s => s.name === 'Production');
+      const postProd = p.stages.find(s => s.name === 'Post-Production');
+
+      const getStageStatus = (stage: any) => {
+        if (!stage) return 'N/A';
+        return stage.status === 'completed' || stage.progress === 100 ? '✓' : stage.status;
+      };
+
+      return [
+        p.name,
+        p.projectManager?.name || 'Unassigned',
+        'CDL Admin', // Placeholder as per requirement ambiguity
+        p.status,
+        `${p.overallProgress}%`,
+        getStageStatus(preProd),
+        getStageStatus(prod),
+        getStageStatus(postProd),
+        p.deadline ? new Date(p.deadline).toLocaleDateString() : 'N/A'
+      ].map(field => `"${field}"`).join(',');
+    });
+
+    const csvContent = [headers.join(','), ...csvData].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', 'project_report.csv');
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  }
+
   getPlatformDotClass(platform: ProjectPlatform): string {
     return platform === 'flame'
       ? 'w-3 h-3 rounded-full bg-orange-500'
@@ -263,7 +335,13 @@ export class AdminDashboardComponent implements OnInit {
       lagging: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
       setup: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
     };
-    return `px-2 py-1 rounded-full text-xs font-medium ${classes[status as keyof typeof classes] || classes.setup}`;
+    return `px-3 py-1 rounded-[0.5rem] text-xs font-medium ${classes[status as keyof typeof classes] || classes.setup}`;
+  }
+
+  formatStatus(status: string): string {
+    if (!status) return '';
+    const formatted = status.replace(/_/g, ' ');
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
   }
 
   getProgressBarClass(status: string): string {
@@ -293,7 +371,6 @@ export class AdminDashboardComponent implements OnInit {
     this.selectedProject = project;
   }
 
-  // Project Creation Modal Handlers
   openProjectCreationModal(platform: string) {
     this.selectedPlatformForCreation = platform as ProjectPlatform;
     this.showProjectCreationModal = true;
@@ -304,23 +381,19 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   onProjectCreated(projectData: any) {
-    // Call service to create project
     this.projectService.createProject(projectData).subscribe({
       next: (newProject) => {
         console.log('Project created successfully:', newProject);
-        // Instant update
         this.projects.unshift(newProject);
         this.filterProjects();
         this.showProjectCreationModal = false;
       },
       error: (error) => {
         console.error('Error creating project:', error);
-        // Optionally show error message to user
       }
     });
   }
 
-  // Project Update/Delete Handlers
   onProjectUpdated(project: Project) {
     this.loadProjects();
   }
@@ -330,7 +403,6 @@ export class AdminDashboardComponent implements OnInit {
     this.loadProjects();
   }
 
-  // Task Modal Handlers
   openTaskModal(stageId: string) {
     this.selectedStageId = stageId;
     this.showTaskModal = true;
@@ -343,10 +415,9 @@ export class AdminDashboardComponent implements OnInit {
 
   onTaskCreated() {
     this.closeTaskModal();
-    this.loadProjects(); // Refresh to show new task/progress
+    this.loadProjects();
   }
 
-  // User Management Handlers
   openUserCreationModal() {
     this.isEditingUser = false;
     this.newUser = { name: '', email: '', password: '', role: 'user' };
@@ -355,7 +426,7 @@ export class AdminDashboardComponent implements OnInit {
 
   openEditUserModal(user: any) {
     this.isEditingUser = true;
-    this.newUser = { ...user, password: '' }; // Don't fill password for edit
+    this.newUser = { ...user, password: '' };
     this.showUserCreationModal = true;
   }
 
@@ -365,22 +436,14 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   saveUser() {
-    // Basic validation
     if (!this.newUser.name || !this.newUser.email) return;
 
     if (this.isEditingUser) {
-      // Logic for updating user
-      // Assuming userService has update method, if not, you'd add it
-      // this.userService.updateUser(this.newUser.id, this.newUser).subscribe(...)
       console.log('Update user:', this.newUser);
-      // Simulate success for UI
       this.loadAvailableManagers();
       this.closeUserCreationModal();
     } else {
-      // Logic for creating user
-      // this.userService.createUser(this.newUser).subscribe(...)
       console.log('Create user:', this.newUser);
-      // Simulate success for UI
       this.loadAvailableManagers();
       this.closeUserCreationModal();
     }
@@ -388,9 +451,7 @@ export class AdminDashboardComponent implements OnInit {
 
   deleteUser(userId: string) {
     if (confirm('Are you sure you want to delete this user?')) {
-      // this.userService.deleteUser(userId).subscribe(...)
       console.log('Delete user:', userId);
-      // Simulate success
       this.loadAvailableManagers();
     }
   }

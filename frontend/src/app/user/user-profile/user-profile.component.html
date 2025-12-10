@@ -1,0 +1,66 @@
+<div class="min-h-screen bg-gray-100 dark:bg-gray-950 p-6 flex justify-center">
+    <div class="w-full max-w-3xl">
+        <button (click)="goBack()"
+            class="mb-6 flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            <span>Back</span>
+        </button>
+
+        <div *ngIf="loading" class="flex justify-center items-center h-64">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+
+        <div *ngIf="!loading && user" class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
+            <!-- Header / Banner -->
+            <div class="h-32 bg-gradient-to-r from-blue-500 to-indigo-600"></div>
+
+            <div class="px-8 pb-8">
+                <div class="relative flex justify-between items-end -mt-12 mb-6">
+                    <img [src]="user.avatar || 'assets/default-avatar.png'"
+                        class="w-24 h-24 rounded-full border-4 border-white dark:border-gray-800 shadow-md bg-white">
+
+                    <span
+                        class="px-4 py-1.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 capitalize">
+                        {{ user.role.replace('_', ' ') }}
+                    </span>
+                </div>
+
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">{{ user.name }}</h1>
+                <p class="text-gray-500 dark:text-gray-400 mb-6">{{ user.email }}</p>
+
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                    <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Profile Details</h2>
+
+                    <!-- Assigned Projects Section -->
+                    <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Assigned Projects</h2>
+                    <div *ngIf="assignedProjects.length > 0; else noProjects" class="space-y-3">
+                        <div *ngFor="let project of assignedProjects" (click)="navigateToProject(project.id)"
+                            class="flex items-center justify-between p-4 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:shadow-md transition-all">
+                            <div>
+                                <h3 class="font-semibold text-gray-800 dark:text-white">{{ project.name }}</h3>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">{{ project.platform | titlecase }}
+                                </p>
+                            </div>
+                            <span [class]="getStatusBadgeClass(project.status)">
+                                {{ project.status.replace('_', ' ') | titlecase }}
+                            </span>
+                        </div>
+                    </div>
+                    <ng-template #noProjects>
+                        <div
+                            class="text-center py-8 bg-gray-50 dark:bg-gray-700/30 rounded-lg border border-dashed border-gray-300 dark:border-gray-600">
+                            <p class="text-gray-500 dark:text-gray-400">No projects assigned to this user.</p>
+                        </div>
+                    </ng-template>
+                </div>
+            </div>
+        </div>
+
+        <div *ngIf="!loading && !user" class="text-center py-12">
+            <p class="text-gray-500 dark:text-gray-400 text-lg">User not found.</p>
+        </div>
+    </div>
+</div>

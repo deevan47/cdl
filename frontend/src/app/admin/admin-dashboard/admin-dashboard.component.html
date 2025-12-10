@@ -1,8 +1,7 @@
-<div class="flex h-screen bg-gray-100 dark:bg-gray-950 transition-colors duration-300">
-  <!-- Sidebar -->
-  <div class="w-64 bg-white dark:bg-gray-900 border-r dark:border-gray-700 flex flex-col">
-    <div class="p-6 border-b dark:border-gray-700 flex flex-col items-center">
-      <img src="assets/logo.png" alt="CDL Logo" class="h-12 w-auto mb-4 cursor-pointer"
+<div class="flex h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
+  <div class="w-64 bg-white dark:bg-black border-r border-gray-300 dark:border-gray-600 flex flex-col">
+    <div class="p-6 border-b border-gray-300 dark:border-gray-600 flex flex-col items-center">
+      <img src="assets/logo.png" alt="CDL Logo" class="h-25 w-auto mb-4 cursor-pointer"
         (click)="navigateToSection('dashboard')">
       <div class="text-center">
         <span
@@ -25,7 +24,7 @@
       </button>
     </nav>
 
-    <div class="p-4 border-t dark:border-gray-700">
+    <div class="p-4 border-t border-gray-300 dark:border-gray-600">
       <button (click)="toggleDarkMode()"
         class="w-full flex items-center justify-center px-4 py-2 text-gray-600 bg-gray-100 rounded-lg dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700">
         <svg *ngIf="!isDarkMode" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"
@@ -55,7 +54,8 @@
   <!-- Main Content -->
   <div class="flex-1 flex flex-col overflow-hidden">
     <!-- Search Bar -->
-    <div class="bg-white dark:bg-gray-900 border-b dark:border-gray-700 p-4 sticky top-0 z-10 shadow-sm flex gap-4">
+    <div
+      class="bg-white dark:bg-gray-900 border-b border-gray-300 dark:border-gray-600 p-4 sticky top-0 z-10 shadow-sm flex gap-4">
       <div class="relative max-w-md flex-1">
         <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
@@ -69,49 +69,88 @@
           placeholder="Search projects...">
       </div>
 
-      <select [(ngModel)]="selectedStatusFilter" (ngModelChange)="filterProjects()"
-        class="border rounded-lg px-4 py-2 text-gray-700 dark:text-gray-200 dark:bg-gray-800 dark:border-gray-600 focus:outline-none focus:border-blue-500">
-        <option value="all">All Statuses</option>
-        <option value="completed">Completed</option>
-        <option value="in_progress">In Progress</option>
-        <option value="at_risk">At Risk</option>
-        <option value="lagging">Lagging</option>
-        <option value="setup">Setup</option>
-      </select>
+      <div class="flex-1"></div> <!-- Spacer to push download button to right -->
+
+      <button *ngIf="currentSection === 'dashboard'" (click)="downloadCSV()"
+        class="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition shadow-md font-medium text-base">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        <span>Download Report</span>
+      </button>
     </div>
     <!-- Dashboard Section -->
     <div *ngIf="currentSection === 'dashboard'" class="flex-1 overflow-y-auto">
-      <div class="p-6">
+      <!-- MAIN DASHBOARD HOME -->
+      <div *ngIf="currentView === 'home'" class="p-6">
         <h1 class="text-4xl font-extrabold text-gray-800 dark:text-white mb-8">Welcome back, {{ currentUser?.name ||
           'Admin' }}!</h1>
 
         <!-- Platform Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
           <div (click)="navigateTo('flame')"
-            class="p-8 rounded-xl bg-gradient-to-br from-orange-400 to-red-500 text-white shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 cursor-pointer">
-            <h2 class="text-4xl font-bold">FLAME</h2>
-            <p class="mt-2 text-lg opacity-80">Internal Creative Projects</p>
+            class="relative overflow-hidden p-10 rounded-2xl bg-gradient-to-br from-orange-400 to-red-600 text-white shadow-xl hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300 cursor-pointer group h-64 flex items-center justify-between">
+            <div class="relative z-10 max-w-[60%]">
+              <!-- Removed Title as requested -->
+              <p class="text-3xl font-bold opacity-90 leading-tight">Internal Creative <br />Projects</p>
+            </div>
+            <img src="assets/flame-logo.png" alt="Flame Logo"
+              class="absolute right-0 top-1/2 transform -translate-y-1/2 h-56 w-auto opacity-90 mix-blend-overlay group-hover:opacity-50 transition-all duration-500">
           </div>
 
           <div (click)="navigateTo('swayam')"
-            class="p-8 rounded-xl bg-gradient-to-br from-blue-400 to-indigo-500 text-white shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 cursor-pointer">
-            <h2 class="text-4xl font-bold">SWAYAM</h2>
-            <p class="mt-2 text-lg opacity-80">External Educational Courses</p>
+            class="relative overflow-hidden p-10 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-700 text-white shadow-xl hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300 cursor-pointer group h-64 flex items-center justify-between">
+            <div class="relative z-10 max-w-[60%]">
+              <!-- Removed Title as requested -->
+              <p class="text-3xl font-bold opacity-90 leading-tight">External Educational Courses</p>
+            </div>
+            <img src="assets/swayam-logo.png" alt="Swayam Logo"
+              class="absolute right-[-30px] top-1/2 transform -translate-y-1/2 h-53 w-auto opacity-90 mix-blend-overlay group-hover:opacity-50 transition-all duration-500">
           </div>
         </div>
 
         <!-- Statistics -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6">
-          <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Dashboard Overview</h3>
-          <div class="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-300">
-            <span>Total Projects: <span class="font-bold text-gray-900 dark:text-white">{{ getStats().total
-                }}</span></span>
-            <span class="text-green-600 dark:text-green-400">Completed: <span class="font-bold">{{ getStats().completed
-                }}</span></span>
-            <span class="text-blue-600 dark:text-blue-400">In Progress: <span class="font-bold">{{ getStats().inProgress
-                }}</span></span>
-            <span class="text-red-600 dark:text-red-400">Lagging: <span class="font-bold">{{ getStats().lagging
-                }}</span></span>
+        <div
+          class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-8 border border-gray-300 dark:border-gray-600">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-2xl font-bold text-gray-800 dark:text-white">Dashboard Overview</h3>
+            <select [(ngModel)]="selectedStatusFilter" (ngModelChange)="filterProjects()"
+              class="border rounded-xl px-4 py-2 text-xl text-gray-900 dark:text-gray-200 dark:bg-gray-800 dark:border-gray-600 focus:outline-none focus:border-blue-500 shadow-sm">
+              <option value="all">All Statuses</option>
+              <option value="completed">Completed</option>
+              <option value="in_progress">In Progress</option>
+              <option value="at_risk">At Risk</option>
+              <option value="lagging">Lagging</option>
+              <option value="setup">Setup</option>
+            </select>
+          </div>
+          <div class="flex flex-wrap gap-6 text-base text-gray-600 dark:text-gray-300">
+            <div class="px-4 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <span>Total Projects: <span class="font-extrabold text-gray-900 dark:text-white text-lg">{{
+                  getStats().total
+                  }}</span></span>
+            </div>
+            <div class="px-4 py-2 bg-green-50 dark:bg-green-900/30 rounded-lg">
+              <span class="text-green-700 dark:text-green-400">Completed: <span class="font-extrabold text-lg">{{
+                  getStats().completed
+                  }}</span></span>
+            </div>
+            <div class="px-4 py-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+              <span class="text-blue-700 dark:text-blue-400">In Progress: <span class="font-extrabold text-lg">{{
+                  getStats().inProgress
+                  }}</span></span>
+            </div>
+            <div class="px-4 py-2 bg-red-50 dark:bg-red-900/30 rounded-lg">
+              <span class="text-red-700 dark:text-red-400">Lagging: <span class="font-extrabold text-lg">{{
+                  getStats().lagging
+                  }}</span></span>
+            </div>
+            <div class="px-4 py-2 bg-yellow-50 dark:bg-yellow-900/30 rounded-lg">
+              <span class="text-yellow-700 dark:text-yellow-400">At Risk: <span class="font-extrabold text-lg">{{
+                  getStats().atRisk
+                  }}</span></span>
+            </div>
           </div>
         </div>
 
@@ -122,7 +161,7 @@
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-3">
                 <div [class]="getPlatformDotClass(project.platform)"></div>
-                <p class="font-semibold text-gray-800 dark:text-gray-100">{{ project.name }}</p>
+                <p class="font-semibold text-gray-800 dark:text-gray-100 truncate pr-2">{{ project.name }}</p>
               </div>
               <span [class]="getStatusBadgeClass(project.status)">{{ project.status }}</span>
             </div>
@@ -134,6 +173,72 @@
           </div>
         </div>
       </div>
+
+      <!-- PLATFORM SPECIFIC VIEW (Flame/Swayam) INSIDE DASHBOARD -->
+      <div *ngIf="currentView === 'flame' || currentView === 'swayam'" class="p-6">
+        <div class="flex items-center gap-4 mb-8">
+          <button (click)="navigateTo('home')"
+            class="flex items-center gap-2 px-4 py-2 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 shadow-sm transition-all duration-200 group">
+            <svg xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5 group-hover:-translate-x-1 transition-transform duration-200" fill="none"
+              viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            <span class="font-medium">Back to Dashboard</span>
+          </button>
+          <h1 class="text-3xl font-bold text-gray-800 dark:text-white capitalize">{{ currentView }} Projects</h1>
+        </div>
+
+        <!-- Big Create Button -->
+        <button (click)="openProjectCreationModal(currentView)"
+          class="w-full mb-8 p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl flex flex-col items-center justify-center text-gray-500 hover:text-blue-600 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all group">
+          <div class="p-4 bg-blue-100 dark:bg-blue-900/50 rounded-full mb-3 group-hover:scale-110 transition-transform">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600 dark:text-blue-400" fill="none"
+              viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+          </div>
+          <span class="text-lg font-semibold">Create New {{ currentView | titlecase }} Project</span>
+          <span class="text-sm opacity-70">Start a new course or project workspace</span>
+        </button>
+
+        <!-- Project Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div *ngFor="let project of filteredProjects" (click)="navigateToProject(project.id)"
+            class="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer border border-gray-300 dark:border-gray-600 overflow-hidden group">
+            <div class="h-2" [class]="getProgressBarClass(project.status)"></div>
+            <div class="p-6">
+              <div class="flex justify-between items-start mb-4">
+                <div class="flex items-center gap-2">
+                  <div [class]="getPlatformDotClass(project.platform)"></div>
+                  <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">{{ project.platform }}</span>
+                </div>
+                <span [class]="getStatusBadgeClass(project.status)">{{ project.status }}</span>
+              </div>
+
+              <h3
+                class="text-xl font-bold text-gray-800 dark:text-white mb-2 group-hover:text-blue-600 transition-colors">
+                {{ project.name }}</h3>
+              <p class="text-gray-500 dark:text-gray-400 text-sm mb-4 line-clamp-2">{{ project.scenario }}</p>
+
+              <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-300 dark:border-gray-600">
+                <div class="flex items-center gap-2">
+                  <img [src]="project.projectManager?.avatar || 'assets/default-avatar.png'"
+                    class="w-6 h-6 rounded-full hover:ring-2 hover:ring-blue-500 transition-all"
+                    (click)="project.projectManager ? navigateToProfile(project.projectManager.id, $event) : null">
+                  <span class="text-sm text-gray-600 dark:text-gray-300">{{ project.projectManager?.name || 'Unassigned'
+                    }}</span>
+                </div>
+                <span class="text-sm font-bold text-gray-900 dark:text-white">{{ project.overallProgress }}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="filteredProjects.length === 0" class="text-center py-12">
+          <p class="text-gray-500 dark:text-gray-400 text-lg">No projects found for {{ currentView | titlecase }}.</p>
+        </div>
+      </div>
     </div>
 
     <!-- Projects Section -->
@@ -142,95 +247,33 @@
         <div class="flex justify-between items-center mb-8">
           <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Project Management</h1>
 
-          <!-- View Toggle / Breadcrumb -->
-          <div class="flex items-center gap-2" *ngIf="currentView !== 'home'">
-            <button (click)="switchToListView()"
-              class="text-sm text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400">
-              All Projects
-            </button>
-            <span class="text-gray-400">/</span>
-            <button (click)="switchToGridView()" class="text-sm font-semibold"
-              [class]="getPlatformTextClass(currentView)">
-              {{ currentView | titlecase }}
-            </button>
-          </div>
+          <!-- Breadcrumb removed as requested for cleaner list-only view -->
         </div>
 
         <!-- Platform Navigation (Visible in all views) -->
         <div class="flex gap-4 mb-6">
-          <button (click)="navigateTo('home')" [class]="getNavClass('home')">
+          <button (click)="switchProjectView('home')" [class]="getNavClass('home')">
             All Projects
           </button>
-          <button (click)="navigateTo('flame')" [class]="getNavClass('flame')">
+          <button (click)="switchProjectView('flame')" [class]="getNavClass('flame')">
             FLAME Projects
           </button>
-          <button (click)="navigateTo('swayam')" [class]="getNavClass('swayam')">
+          <button (click)="switchProjectView('swayam')" [class]="getNavClass('swayam')">
             SWAYAM Projects
           </button>
         </div>
 
-        <!-- GRID VIEW -->
-        <div *ngIf="viewMode === 'grid'" class="flex-1 overflow-y-auto">
-          <!-- Big Create Button -->
-          <button (click)="openProjectCreationModal(currentView)"
-            class="w-full mb-8 p-6 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl flex flex-col items-center justify-center text-gray-500 hover:text-blue-600 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all group">
-            <div
-              class="p-4 bg-blue-100 dark:bg-blue-900/50 rounded-full mb-3 group-hover:scale-110 transition-transform">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600 dark:text-blue-400" fill="none"
-                viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-              </svg>
-            </div>
-            <span class="text-lg font-semibold">Create New {{ currentView | titlecase }} Project</span>
-            <span class="text-sm opacity-70">Start a new course or project workspace</span>
-          </button>
-
-          <!-- Project Grid -->
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div *ngFor="let project of filteredProjects" (click)="navigateToProject(project.id)"
-              class="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer border border-gray-200 dark:border-gray-700 overflow-hidden group">
-              <div class="h-2" [class]="getProgressBarClass(project.status)"></div>
-              <div class="p-6">
-                <div class="flex justify-between items-start mb-4">
-                  <div class="flex items-center gap-2">
-                    <div [class]="getPlatformDotClass(project.platform)"></div>
-                    <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">{{ project.platform
-                      }}</span>
-                  </div>
-                  <span [class]="getStatusBadgeClass(project.status)">{{ project.status }}</span>
-                </div>
-
-                <h3
-                  class="text-xl font-bold text-gray-800 dark:text-white mb-2 group-hover:text-blue-600 transition-colors">
-                  {{ project.name }}</h3>
-                <p class="text-gray-500 dark:text-gray-400 text-sm mb-4 line-clamp-2">{{ project.scenario }}</p>
-
-                <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                  <div class="flex items-center gap-2">
-                    <img [src]="project.projectManager?.avatar || 'assets/default-avatar.png'"
-                      class="w-6 h-6 rounded-full">
-                    <span class="text-sm text-gray-600 dark:text-gray-300">{{ project.projectManager?.name ||
-                      'Unassigned' }}</span>
-                  </div>
-                  <span class="text-sm font-bold text-gray-900 dark:text-white">{{ project.overallProgress }}%</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div *ngIf="filteredProjects.length === 0" class="text-center py-12">
-            <p class="text-gray-500 dark:text-gray-400 text-lg">No projects found for {{ currentView | titlecase }}.</p>
-          </div>
-        </div>
+        <!-- GRID VIEW REMOVED FROM PROJECTS TAB -->
 
         <!-- LIST VIEW (Standard Workspace) -->
         <div *ngIf="viewMode === 'list'" class="flex flex-1 overflow-hidden">
           <!-- Project List Sidebar -->
-          <div class="w-1/3 border-r dark:border-gray-700 flex flex-col bg-white dark:bg-gray-900">
+          <div class="w-1/3 border-r border-gray-300 dark:border-gray-600 flex flex-col bg-white dark:bg-gray-900">
             <div
-              class="p-4 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
-              <h2 class="text-lg font-bold capitalize" [class]="getPlatformTextClass(currentView)">{{ currentView }}
-                Projects</h2>
+              class="p-4 border-b border-gray-300 dark:border-gray-600 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
+              <h2 class="text-lg font-bold capitalize" [class]="getPlatformTextClass(currentView)">
+                {{ currentView === 'home' ? 'All' : currentView }} Projects
+              </h2>
             </div>
 
             <div class="flex-1 overflow-y-auto">
@@ -238,7 +281,9 @@
                 [class]="getProjectItemClass(project)">
                 <div class="flex justify-between items-center">
                   <p class="font-semibold text-gray-800 dark:text-gray-100 truncate pr-2">{{ project.name }}</p>
-                  <span [class]="getStatusBadgeClass(project.status)">{{ project.status }}</span>
+                  <span [class]="getStatusBadgeClass(project.status)">
+                    {{ formatStatus(project.status) }}
+                  </span>
                 </div>
                 <div class="mt-2">
                   <div class="w-full bg-gray-200 rounded-full h-1.5 dark:bg-gray-700">
@@ -296,31 +341,21 @@
           <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
               <thead>
-                <tr class="border-b dark:border-gray-700">
+                <tr class="border-b border-gray-300 dark:border-gray-600">
                   <th class="p-3 text-sm font-semibold text-gray-600 dark:text-gray-300">Name</th>
                   <th class="p-3 text-sm font-semibold text-gray-600 dark:text-gray-300">Email</th>
                   <th class="p-3 text-sm font-semibold text-gray-600 dark:text-gray-300">Role</th>
-                  <th class="p-3 text-sm font-semibold text-gray-600 dark:text-gray-300">Status</th>
                   <th class="p-3 text-sm font-semibold text-gray-600 dark:text-gray-300">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 <tr *ngFor="let user of availableManagers"
-                  class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                  <td class="p-3 text-gray-800 dark:text-gray-200">{{ user.name }}</td>
+                  class="border-b border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                  <td class="p-3 text-gray-800 dark:text-gray-200 cursor-pointer hover:text-blue-600 hover:underline"
+                    (click)="navigateToProfile(user.id, $event)">{{ user.name }}</td>
                   <td class="p-3 text-gray-600 dark:text-gray-400">{{ user.email }}</td>
-                  <td class="p-3">
-                    <span
-                      class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
-                      {{ formatRole(user.role) }}
-                    </span>
-                  </td>
-                  <td class="p-3">
-                    <span class="px-2 py-1 text-xs font-medium rounded-full" [class.bg-green-100]="user.isActive"
-                      [class.text-green-800]="user.isActive" [class.bg-red-100]="!user.isActive"
-                      [class.text-red-800]="!user.isActive">
-                      {{ user.isActive ? 'Active' : 'Inactive' }}
-                    </span>
+                  <td class="p-3 text-gray-800 dark:text-gray-200">
+                    {{ formatRole(user.role) }}
                   </td>
                   <td class="p-3 flex gap-2">
                     <button (click)="openEditUserModal(user)" class="text-blue-600 hover:text-blue-800">

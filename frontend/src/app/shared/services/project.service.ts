@@ -7,6 +7,9 @@ import { User } from '../models/user.model';
 @Injectable({
   providedIn: 'root'
 })
+/**
+ * Service for managing project-related operations including creation, updates, and assignments.
+ */
 export class ProjectService {
   private apiUrl = 'http://localhost:3000/projects';
 
@@ -48,7 +51,6 @@ export class ProjectService {
     return this.http.post<any>(`${this.apiUrl}/stages/${stageId}/tasks`, taskData);
   }
   getAvailableManagers(): Observable<User[]> {
-    // Now every user can be a manager, so return all users
     return this.http.get<User[]>(`http://localhost:3000/users`);
   }
 
@@ -56,7 +58,6 @@ export class ProjectService {
     return this.http.get<Project[]>(`${this.apiUrl}/user/${userId}`);
   }
 
-  // Added for transparency - fetch all projects
   getAllProjectsForDashboard(): Observable<Project[]> {
     return this.http.get<Project[]>(this.apiUrl);
   }

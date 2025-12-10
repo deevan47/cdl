@@ -9,6 +9,10 @@ import { User } from '../../models/user.model';
   templateUrl: './task-modal.component.html',
   styleUrls: ['./task-modal.component.css']
 })
+/**
+ * Modal component for creating new tasks within a project stage.
+ * Handles form validation and optional user assignment during creation.
+ */
 export class TaskModalComponent implements OnInit {
   @Input() stageId!: string;
   @Input() availableManagers: User[] = [];
@@ -18,6 +22,8 @@ export class TaskModalComponent implements OnInit {
   taskForm: FormGroup;
   showModal = true;
 
+  isSubmitting = false;
+
   constructor(
     private fb: FormBuilder,
     private projectService: ProjectService,
@@ -25,11 +31,9 @@ export class TaskModalComponent implements OnInit {
   ) {
     this.taskForm = this.fb.group({
       name: ['', Validators.required],
-      // description: [''], // Removed
       startDate: ['', Validators.required],
       endDate: ['', Validators.required],
-      // estimatedHours: [0, [Validators.min(0)]], // Removed
-      assignedUserId: [''] // Added
+      assignedUserId: ['']
     });
   }
 
@@ -46,6 +50,7 @@ export class TaskModalComponent implements OnInit {
 
   onSubmit() {
     if (this.taskForm.valid) {
+      this.isSubmitting = true;
       const formValue = this.taskForm.value;
       const taskData = {
         name: formValue.name,
@@ -58,26 +63,31 @@ export class TaskModalComponent implements OnInit {
       this.projectService.addTaskToStage(this.stageId, taskData)
         .subscribe({
           next: (createdTask) => {
-            // If user is selected, assign them
             if (formValue.assignedUserId) {
               this.taskService.assignUserToTask(createdTask.id, formValue.assignedUserId).subscribe({
                 next: () => {
+                  this.isSubmitting = false;
                   this.taskCreated.emit();
                   this.closeModal();
                 },
                 error: (err) => {
                   console.error('Error assigning user to task:', err);
                   // Emit anyway since task was created
+                  this.isSubmitting = false;
                   this.taskCreated.emit();
                   this.closeModal();
                 }
               });
             } else {
+              this.isSubmitting = false;
               this.taskCreated.emit();
               this.closeModal();
             }
           },
-          error: (error) => console.error('Error creating task:', error)
+          error: (error) => {
+            console.error('Error creating task:', error);
+            this.isSubmitting = false;
+          }
         });
     }
   }

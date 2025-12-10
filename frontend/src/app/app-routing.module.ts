@@ -4,6 +4,7 @@ import { LoginComponent } from './auth/login/login.component';
 import { RegisterComponent } from './auth/register/register.component';
 import { DashboardWrapperComponent } from './dashboard-wrapper/dashboard-wrapper.component';
 import { ProjectPageComponent } from './user/project-page/project-page.component';
+import { UserProfileComponent } from './user/user-profile/user-profile.component';
 import { AuthGuard } from './shared/guards/auth.guard';
 import { RoleGuard } from './shared/guards/role.guard';
 
@@ -31,6 +32,11 @@ const routes: Routes = [
   {
     path: 'projects/:id',
     component: ProjectPageComponent,
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'profile/:id',
+    component: UserProfileComponent,
     canActivate: [AuthGuard]
   }
 ];

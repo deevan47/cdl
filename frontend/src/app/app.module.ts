@@ -20,6 +20,7 @@ import { AuthInterceptor } from './shared/interceptors/auth.interceptor';
 import { CommentsComponent } from './shared/components/comments/comments.component';
 import { ProjectPageComponent } from './user/project-page/project-page.component';
 import { DashboardWrapperComponent } from './dashboard-wrapper/dashboard-wrapper.component';
+import { UserProfileComponent } from './user/user-profile/user-profile.component';
 
 @NgModule({
   declarations: [
@@ -34,7 +35,8 @@ import { DashboardWrapperComponent } from './dashboard-wrapper/dashboard-wrapper
     UserManagementComponent,
     CommentsComponent,
     ProjectPageComponent,
-    DashboardWrapperComponent
+    DashboardWrapperComponent,
+    UserProfileComponent
   ],
   imports: [
     BrowserModule,

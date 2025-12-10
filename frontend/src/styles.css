@@ -2,6 +2,18 @@
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 
+::selection {
+  background-color: #3b82f6;
+  /* blue-500 */
+  color: white;
+}
+
+::-moz-selection {
+  background-color: #3b82f6;
+  /* blue-500 */
+  color: white;
+}
+
 /* Custom styles for CDL Project Management */
 body {
   font-family: 'Inter', sans-serif;

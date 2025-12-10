@@ -113,6 +113,8 @@ export class ProjectsService {
       name: createProjectDto.name,
       platform: createProjectDto.platform,
       scenario: createProjectDto.scenario || 'New Project',
+      startDate: createProjectDto.startDate ? new Date(createProjectDto.startDate) : undefined,
+      endDate: createProjectDto.endDate ? new Date(createProjectDto.endDate) : undefined,
       deadline: new Date(createProjectDto.deadline),
       projectManager: manager || null,
     });

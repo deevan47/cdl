@@ -21,6 +21,8 @@ export class ProjectCreationModalComponent implements OnInit {
     this.projectForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]],
       projectManagerId: ['', Validators.required],
+      startDate: ['', Validators.required],
+      endDate: ['', Validators.required],
       deadline: ['', Validators.required],
       scenario: ['']
     });
@@ -30,9 +32,17 @@ export class ProjectCreationModalComponent implements OnInit {
     // Set default deadline to 30 days from now
     const defaultDeadline = new Date();
     defaultDeadline.setDate(defaultDeadline.getDate() + 30);
+    const today = new Date().toISOString().split('T')[0];
+
     this.projectForm.patchValue({
+      startDate: today,
+      endDate: defaultDeadline.toISOString().split('T')[0],
       deadline: defaultDeadline.toISOString().split('T')[0],
       scenario: this.getDefaultScenario()
+    });
+
+    this.projectForm.get('endDate')?.valueChanges.subscribe(value => {
+      this.projectForm.patchValue({ deadline: value }, { emitEvent: false });
     });
   }
 

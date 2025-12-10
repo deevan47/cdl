@@ -11,27 +11,81 @@ import { AuthService } from '../../shared/services/auth.service';
   templateUrl: './user-dashboard.component.html',
   styleUrls: ['./user-dashboard.component.css']
 })
+/**
+ * Main dashboard component for regular users and project managers.
+ * Handles project viewing, task management, and assignment.
+ */
 export class UserDashboardComponent implements OnInit {
-  // State variables
   isDarkMode = false;
-  searchQuery = ''; // Search Query
-  selectedStatusFilter = 'all'; // Status Filter
+  searchQuery = '';
+  selectedManagedStatusFilter = 'all';
+  selectedAssignedStatusFilter = 'all';
   currentView: 'home' | 'flame' | 'swayam' | 'profile' | 'settings' | 'notifications' | 'messages' | 'project_details' = 'home';
 
-  // Data
+  // ... (lines 22-327 remain unchanged)
+
+  getManagedProjects(): Project[] {
+    let projects = this.managedProjects;
+
+    if (this.searchQuery) {
+      const query = this.searchQuery.toLowerCase();
+      projects = projects.filter(p =>
+        p.name.toLowerCase().includes(query) ||
+        p.projectManager?.name.toLowerCase().includes(query)
+      );
+    }
+
+    if (this.selectedManagedStatusFilter !== 'all') {
+      projects = projects.filter(p => p.status === this.selectedManagedStatusFilter);
+    }
+
+    return projects;
+  }
+
+  getAssignedProjects(): Project[] {
+    let projects = this.assignedProjects;
+
+    if (this.searchQuery) {
+      const query = this.searchQuery.toLowerCase();
+      projects = projects.filter(p =>
+        p.name.toLowerCase().includes(query) ||
+        p.projectManager?.name.toLowerCase().includes(query)
+      );
+    }
+
+    if (this.selectedAssignedStatusFilter !== 'all') {
+      projects = projects.filter(p => p.status === this.selectedAssignedStatusFilter);
+    }
+
+    return projects;
+  }
+
+  getOtherProjects(): Project[] {
+    let projects = this.otherProjects;
+
+    if (this.searchQuery) {
+      const query = this.searchQuery.toLowerCase();
+      projects = projects.filter(p =>
+        p.name.toLowerCase().includes(query) ||
+        p.projectManager?.name.toLowerCase().includes(query)
+      );
+    }
+
+    return projects;
+  }
+
   currentUser: User | null = null;
   allProjects: Project[] = [];
   managedProjects: Project[] = [];
   assignedProjects: Project[] = [];
+  otherProjects: Project[] = [];
   selectedProject: Project | null = null;
 
-  // Assignment UI
   availableUsers: User[] = [];
   showAssignmentModal = false;
   selectedStageForAssignment: any = null;
   selectedUsersForAssignment: string[] = [];
 
-  // Icons
   private ICONS_SVG: { [key: string]: string } = {
     home: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>`,
     user: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`,
@@ -64,7 +118,6 @@ export class UserDashboardComponent implements OnInit {
     this.loadUser();
     this.loadAvailableUsers();
 
-    // Load Theme
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark') {
       this.isDarkMode = true;
@@ -97,22 +150,43 @@ export class UserDashboardComponent implements OnInit {
   loadProjects() {
     if (!this.currentUser) return;
 
-    // Load ALL projects for transparency as requested
     this.projectService.getAllProjectsForDashboard().subscribe({
       next: (projects) => {
         console.log('Dashboard: Loaded all projects:', projects);
         this.allProjects = projects;
         this.managedProjects = projects.filter(p => p.projectManager?.id === this.currentUser?.id);
 
-        // For transparency, show ALL other projects in "My Projects" (or Team Projects)
-        // This ensures users see projects even if not explicitly assigned yet
-        this.assignedProjects = projects.filter(p => p.projectManager?.id !== this.currentUser?.id);
+        this.assignedProjects = projects.filter(p => p.projectManager?.id !== this.currentUser?.id && this.isAssignedToProject(p));
 
-        // Default to showing all projects in the list
+        this.otherProjects = projects.filter(p => p.projectManager?.id !== this.currentUser?.id && !this.isAssignedToProject(p));
+
         this.calculateAllProjectsHealth();
       },
       error: (err) => console.error('Error loading projects:', err)
     });
+  }
+
+  isAssignedToProject(project: Project): boolean {
+    if (!this.currentUser) return false;
+    // Check if user is assigned to any stage or task
+    // Note: The backend might return assigned projects directly, but since we fetch ALL projects, we need to check manually if the user is involved.
+    // However, `assignedProjects` in the previous code was just `!manager`. 
+    // The user request implies "Assigned Projects" (My Projects) vs "Other Projects".
+    // "My Projects" = Assigned as member OR Manager (but Manager is separate).
+    // So "My Projects" (Assigned) = User is in `assignedTeamMembers` of any stage/task.
+
+    // Let's check stages for assignment
+    if (project.stages) {
+      for (const stage of project.stages) {
+        if (stage.assignedTeamMembers?.some(u => u.id === this.currentUser?.id)) return true;
+        if (stage.tasks) {
+          for (const task of stage.tasks) {
+            if (task.assignedTeamMembers?.some(u => u.id === this.currentUser?.id)) return true;
+          }
+        }
+      }
+    }
+    return false;
   }
 
   loadAvailableUsers() {
@@ -130,22 +204,28 @@ export class UserDashboardComponent implements OnInit {
       return;
     }
 
-    // Managed Projects: Where user is the Project Manager
     this.managedProjects = this.allProjects.filter(p => {
       const isManager = p.projectManager?.id === this.currentUser?.id;
       return isManager;
     });
 
-    // Assigned Projects: Show all other projects for transparency
     this.assignedProjects = this.allProjects.filter(p => {
       return p.projectManager?.id !== this.currentUser?.id;
     });
   }
 
-  // --- UI Actions ---
+
 
   getIcon(name: string): SafeHtml {
     return this.sanitizer.bypassSecurityTrustHtml(this.ICONS_SVG[name] || '');
+  }
+
+  getSectionNavClass(view: string): string {
+    const baseClass = 'w-full text-left px-4 py-3 rounded-lg transition-all duration-200 flex items-center mb-1 font-medium cursor-pointer';
+    const activeClass = 'bg-blue-600 text-white shadow-md';
+    const inactiveClass = 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-200';
+
+    return `${baseClass} ${this.currentView === view ? activeClass : inactiveClass}`;
   }
 
 
@@ -178,7 +258,7 @@ export class UserDashboardComponent implements OnInit {
     }
   }
 
-  // --- Task Creation UI ---
+
   showTaskCreationModal = false;
   selectedStageForTask: any = null;
   newTaskName = '';
@@ -238,7 +318,7 @@ export class UserDashboardComponent implements OnInit {
     });
   }
 
-  // --- Task Toggle ---
+
 
   toggleTask(task: any) {
     if (!this.canToggleTask(task)) return;
@@ -258,17 +338,13 @@ export class UserDashboardComponent implements OnInit {
   }
 
   canToggleTask(task: any): boolean {
-    // PM can always toggle
     if (this.selectedProject?.projectManager?.id === this.currentUser?.id) return true;
 
-    // Find stage for this task
-    const stage = this.selectedProject?.stages?.find(s => s.tasks?.some((t: any) => t.id === task.id));
+    const stage = this.selectedProject?.stages?.find(s => s.id === task.stageId);
     if (!stage) return false;
 
-    // Check if stage is locked
     if (this.isStageLocked(stage)) return false;
 
-    // Assigned users can toggle
     return stage.assignedTeamMembers?.some((u: User) => u.id === this.currentUser?.id);
   }
 
@@ -281,19 +357,13 @@ export class UserDashboardComponent implements OnInit {
     if (!this.selectedProject || !this.selectedProject.stages) return false;
 
     const index = this.selectedProject.stages.findIndex(s => s.id === stage.id);
-    if (index <= 0) return false; // First stage always unlocked
+    if (index <= 0) return false;
 
-    // Check previous stage
     const prevStage = this.selectedProject.stages[index - 1];
-    // Ideally check status, but for now check if all tasks are completed
-    // Or use the status from backend if reliable
-    // Let's use a simple check: is previous stage completed?
-    // If backend status is COMPLETED, then yes.
-    // If not, check tasks manually
+
     if ((prevStage as any)['status']?.label === 'Completed') return false;
 
-    // Manual check
-    if (!prevStage.tasks || prevStage.tasks.length === 0) return false; // If no tasks, assume done? Or blocked? Let's say unlocked if empty for now to avoid deadlocks
+    if (!prevStage.tasks || prevStage.tasks.length === 0) return false;
 
     const allCompleted = prevStage.tasks.every((t: any) => t.isCompleted);
     return !allCompleted;
@@ -304,12 +374,10 @@ export class UserDashboardComponent implements OnInit {
 
     let filtered = this.allProjects;
 
-    // Filter by Platform
     if (platform) {
       filtered = filtered.filter(p => p.platform && p.platform.toLowerCase() === platform.toLowerCase());
     }
 
-    // Filter by Search Query
     if (this.searchQuery) {
       const query = this.searchQuery.toLowerCase();
       filtered = filtered.filter(p =>
@@ -318,53 +386,10 @@ export class UserDashboardComponent implements OnInit {
       );
     }
 
-    // Filter by Status
-    if (this.selectedStatusFilter !== 'all') {
-      filtered = filtered.filter(p => p.status === this.selectedStatusFilter);
-    }
-
     return filtered;
   }
 
-  getManagedProjects(): Project[] {
-    let projects = this.managedProjects;
 
-    // Search
-    if (this.searchQuery) {
-      const query = this.searchQuery.toLowerCase();
-      projects = projects.filter(p =>
-        p.name.toLowerCase().includes(query) ||
-        p.projectManager?.name.toLowerCase().includes(query)
-      );
-    }
-
-    // Status
-    if (this.selectedStatusFilter !== 'all') {
-      projects = projects.filter(p => p.status === this.selectedStatusFilter);
-    }
-
-    return projects;
-  }
-
-  getAssignedProjects(): Project[] {
-    let projects = this.assignedProjects;
-
-    // Search
-    if (this.searchQuery) {
-      const query = this.searchQuery.toLowerCase();
-      projects = projects.filter(p =>
-        p.name.toLowerCase().includes(query) ||
-        p.projectManager?.name.toLowerCase().includes(query)
-      );
-    }
-
-    // Status
-    if (this.selectedStatusFilter !== 'all') {
-      projects = projects.filter(p => p.status === this.selectedStatusFilter);
-    }
-
-    return projects;
-  }
 
   getStats() {
     return {
@@ -375,7 +400,7 @@ export class UserDashboardComponent implements OnInit {
     };
   }
 
-  // --- Assignment Logic ---
+
 
   openAssignmentModal(stage: any) {
     this.selectedStageForAssignment = stage;
@@ -406,7 +431,6 @@ export class UserDashboardComponent implements OnInit {
         // Update local state
         const stageIndex = this.selectedProject?.stages?.findIndex(s => s.id === updatedStage.id);
         if (this.selectedProject && stageIndex !== undefined && stageIndex > -1) {
-          // Refresh project to get full user objects
           this.loadProjects();
         }
         this.closeAssignmentModal();
@@ -426,7 +450,7 @@ export class UserDashboardComponent implements OnInit {
     return false; // Only PM can edit structure (add tasks, assign users)
   }
 
-  // --- Helpers ---
+
 
   getTaskStatus(task: any) {
     const endDate = new Date(task.endDate);
@@ -453,11 +477,11 @@ export class UserDashboardComponent implements OnInit {
 
       (p as any)['overallStatus'] = { label: p.status, color };
 
-      // Stage status
+      (p as any)['overallStatus'] = { label: p.status, color };
+
       p.stages?.forEach(stage => {
         let sColor = 'blue';
-        // map stage status...
-        // Check tasks
+
         if (stage.tasks && stage.tasks.length > 0) {
           const allDone = stage.tasks.every((t: any) => t.isCompleted);
           const completedCount = stage.tasks.filter((t: any) => t.isCompleted).length;
@@ -484,7 +508,13 @@ export class UserDashboardComponent implements OnInit {
       blue: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
       gray: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
     };
-    return `px-2.5 py-0.5 text-xs font-medium rounded-full ${classes[color || 'blue']}`;
+    return `px-3 py-1 rounded-[0.5rem] text-xs font-medium ${classes[color || 'blue']}`;
+  }
+
+  formatStatus(status: string): string {
+    if (!status) return '';
+    const formatted = status.replace(/_/g, ' ');
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
   }
 
   getProgressBarColorClass(color: string | undefined): string {
