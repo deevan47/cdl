@@ -1,5 +1,5 @@
 import { Controller, Get, ForbiddenException } from '@nestjs/common';
-import { UsersService } from '../users/user.service';
+import { UsersService } from '../users/users.service';
 
 @Controller('debug')
 export class DebugController {

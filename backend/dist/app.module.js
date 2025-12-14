@@ -10,7 +10,7 @@ exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const config_1 = require("@nestjs/config");
-const user_module_1 = require("./modules/users/user.module");
+const users_module_1 = require("./modules/users/users.module");
 const auth_module_1 = require("./modules/auth/auth.module");
 const projects_module_1 = require("./modules/projects/projects/projects.module");
 const tasks_module_1 = require("./modules/tasks/tasks.module");
@@ -43,7 +43,7 @@ exports.AppModule = AppModule = __decorate([
                 }),
                 inject: [config_1.ConfigService],
             }),
-            user_module_1.UsersModule,
+            users_module_1.UsersModule,
             auth_module_1.AuthModule,
             projects_module_1.ProjectsModule,
             tasks_module_1.TasksModule,

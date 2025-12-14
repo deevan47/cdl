@@ -8,6 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DebugController = void 0;
 const common_1 = require("@nestjs/common");
@@ -32,6 +33,6 @@ __decorate([
 ], DebugController.prototype, "listAllUsers", null);
 exports.DebugController = DebugController = __decorate([
     (0, common_1.Controller)('debug'),
-    __metadata("design:paramtypes", [user_service_1.UsersService])
+    __metadata("design:paramtypes", [typeof (_a = typeof user_service_1.UsersService !== "undefined" && user_service_1.UsersService) === "function" ? _a : Object])
 ], DebugController);
 //# sourceMappingURL=debug.controller.js.map
