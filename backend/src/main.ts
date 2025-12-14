@@ -34,7 +34,8 @@ async function bootstrap() {
       next();
     });
 
-    await app.listen(3000, '0.0.0.0');
+    const port = process.env.PORT || 3000;
+    await app.listen(port, '0.0.0.0');
     logger.log(`CDL Project Management Backend is running on: ${process.env.BACKEND_URL || 'http://localhost:3000'}`);
   } catch (err) {
   }
