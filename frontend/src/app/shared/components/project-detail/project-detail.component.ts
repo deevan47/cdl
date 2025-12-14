@@ -351,29 +351,8 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
       this.taskService.assignUserToTask(task.id, userId)
         .subscribe({
           next: (updatedTask) => {
-            if (this.project) {
-              const stage = this.project.stages.find(s => s.id === task.stageId);
-              if (stage) {
-                const taskIndex = stage.tasks.findIndex(t => t.id === task.id);
-                if (taskIndex !== -1) stage.tasks[taskIndex] = updatedTask;
-
-                // Auto-assign to stage if not already assigned
-                const isAlreadyAssigned = stage.assignedTeamMembers.some(u => u.id === userId);
-                if (!isAlreadyAssigned) {
-                  const newUserIds = [...stage.assignedTeamMembers.map(u => u.id), userId];
-                  this.projectService.assignUsersToStage(stage.id, newUserIds).subscribe({
-                    next: (updatedStage) => {
-                      // Update local stage members
-                      const user = this.availableManagers.find(u => u.id === userId);
-                      if (user) stage.assignedTeamMembers.push(user);
-                      console.log('Auto-assigned user to stage:', user?.name);
-                    },
-                    error: (err) => console.error('Error auto-assigning user to stage:', err)
-                  });
-                }
-              }
-            }
-            event.target.value = '';
+            // Reload the page as requested
+            window.location.reload();
           },
           error: (error) => console.error('Error assigning user to task:', error)
         });

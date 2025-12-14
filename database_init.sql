@@ -67,4 +67,4 @@ CREATE TABLE task_assignments (
     task_id UUID REFERENCES tasks(id) ON DELETE CASCADE,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     PRIMARY KEY (task_id, user_id)
-);
+ );

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Task } from './entities/task.entity';
@@ -29,7 +29,23 @@ export class TasksService {
       .getMany();
   }
 
-  create(createTaskDto: Partial<Task>) {
+  async create(createTaskDto: Partial<Task>) {
+    // Validate deadline
+    if (createTaskDto.endDate && createTaskDto.stage) {
+      const stage = await this.taskRepository.manager.findOne('ProjectStage', {
+        where: { id: (createTaskDto.stage as any).id || createTaskDto.stage },
+        relations: ['project']
+      }) as any;
+
+      if (stage && stage.project && stage.project.deadline) {
+        const projectDeadline = new Date(stage.project.deadline);
+        const taskDeadline = new Date(createTaskDto.endDate);
+        if (taskDeadline > projectDeadline) {
+          throw new BadRequestException(`Task deadline cannot be after the project deadline (${projectDeadline.toDateString()})`);
+        }
+      }
+    }
+
     const task = this.taskRepository.create(createTaskDto as any);
     return this.taskRepository.save(task);
   }
@@ -47,6 +63,25 @@ export class TasksService {
   }
 
   async update(id: string, updateTaskDto: Partial<Task>) {
+    // Validate deadline
+    if (updateTaskDto.endDate) {
+      const task = await this.findOne(id);
+      // We need to fetch the project to check the deadline. 
+      // The findOne above fetches stage, but we need stage.project
+      const stage = await this.taskRepository.manager.findOne('ProjectStage', {
+        where: { id: task.stage.id },
+        relations: ['project']
+      }) as any;
+
+      if (stage && stage.project && stage.project.deadline) {
+        const projectDeadline = new Date(stage.project.deadline);
+        const taskDeadline = new Date(updateTaskDto.endDate);
+        if (taskDeadline > projectDeadline) {
+          throw new BadRequestException(`Task deadline cannot be after the project deadline (${projectDeadline.toDateString()})`);
+        }
+      }
+    }
+
     const task = await this.taskRepository.preload({ id, ...(updateTaskDto as any) });
     if (!task) {
       throw new NotFoundException(`Task with ID "${id}" not found`);

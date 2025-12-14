@@ -1,5 +1,5 @@
 // ...existing code...
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Project, ProjectPlatform, ProjectStatus } from '../entities/project.entity';
@@ -149,8 +149,23 @@ export class ProjectsService {
     });
   }
 
-  async update(id: string, updateProjectDto: UpdateProjectDto): Promise<Project> {
+  async update(id: string, updateProjectDto: UpdateProjectDto, user?: any): Promise<Project> {
     const project = await this.findOne(id);
+
+    // Check if deadline is being changed
+    if (updateProjectDto.deadline) {
+      const newDeadline = new Date(updateProjectDto.deadline);
+      const currentDeadline = project.deadline ? new Date(project.deadline) : null;
+
+      // If there is an existing deadline and it's different from the new one
+      if (currentDeadline && newDeadline.getTime() !== currentDeadline.getTime()) {
+        // Enforce Admin only
+        if (user && user.role !== UserRole.ADMIN) {
+          throw new ForbiddenException('Only Administrators can change the project deadline once it has been set.');
+        }
+      }
+    }
+
     Object.assign(project, updateProjectDto);
     return this.projectsRepository.save(project);
   }

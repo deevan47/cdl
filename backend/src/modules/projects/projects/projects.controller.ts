@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, Logger, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, Logger, UsePipes, ValidationPipe, Req } from '@nestjs/common';
 import { IsArray, IsUUID } from 'class-validator';
 import { ProjectsService } from './projects.service';
 import { Project, ProjectPlatform } from '../entities/project.entity';
@@ -65,8 +65,8 @@ export class ProjectsController {
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() updateProjectDto: UpdateProjectDto): Promise<Project> {
-    return this.projectsService.update(id, updateProjectDto);
+  update(@Param('id') id: string, @Body() updateProjectDto: UpdateProjectDto, @Req() req): Promise<Project> {
+    return this.projectsService.update(id, updateProjectDto, req.user);
   }
 
   @Delete(':id')

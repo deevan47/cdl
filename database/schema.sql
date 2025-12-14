@@ -1,6 +1,3 @@
--- REMOVE THIS IF YOU ARE IMPORTING INTO AN EXISTING DB
--- CREATE DATABASE cdl_management;
-
 -- Users table
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -83,4 +80,4 @@ CREATE TABLE task_assignments (
     task_id UUID REFERENCES tasks(id) ON DELETE CASCADE,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     PRIMARY KEY (task_id, user_id)
-);
+ );
