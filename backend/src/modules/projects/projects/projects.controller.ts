@@ -43,7 +43,6 @@ export class ProjectsController {
 
   @Get('user/:userId')
   async getAssignedProjects(@Param('userId') userId: string): Promise<Project[]> {
-    this.logger.log(`getAssignedProjects: userId=${userId}`);
     return this.projectsService.getAssignedProjects(userId);
   }
 
@@ -60,7 +59,6 @@ export class ProjectsController {
   @Post()
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }))
   create(@Body() createProjectDto: CreateProjectDto): Promise<Project> {
-    this.logger.log(`create: Creating project name=${createProjectDto.name}`);
     return this.projectsService.create(createProjectDto);
   }
 

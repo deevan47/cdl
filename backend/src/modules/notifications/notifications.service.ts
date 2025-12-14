@@ -13,8 +13,6 @@ export class NotificationsService {
         @InjectRepository(Notification)
         private readonly notificationsRepository: Repository<Notification>,
     ) {
-        // Initialize Nodemailer (Mock or Real)
-        // For now, we'll use a mock transport or check for env vars
         if (process.env.SMTP_HOST) {
             this.transporter = nodemailer.createTransport({
                 host: process.env.SMTP_HOST,
@@ -65,12 +63,10 @@ export class NotificationsService {
                     subject,
                     text,
                 });
-                this.logger.log(`Email sent to ${to}`);
             } catch (error) {
                 this.logger.error(`Failed to send email to ${to}`, error);
             }
-        } else {
-            this.logger.log(`[MOCK EMAIL] To: ${to} | Subject: ${subject} | Body: ${text}`);
         }
     }
 }
+

@@ -9,7 +9,6 @@ async function bootstrap() {
   try {
     logger.log('Starting CDL Project Management Backend...');
 
-    logger.debug('Creating NestFactory application...');
     const app = await NestFactory.create(AppModule);
     logger.log('NestFactory application created successfully');
 
@@ -17,7 +16,6 @@ async function bootstrap() {
       whitelist: true,
       transform: true,
     }));
-    logger.debug('Global validation pipes configured');
 
     app.enableCors({
       origin: process.env.FRONTEND_URL || '*',
@@ -25,19 +23,12 @@ async function bootstrap() {
       credentials: true,
       allowedHeaders: ['Content-Type', 'Authorization'],
     });
-    logger.debug(`CORS enabled for origin: ${process.env.FRONTEND_URL || '*'}`);
-
-
-    app.use((req: any, res: any, next: any) => {
-      // ... your request logger ...
-      logger.debug(`[${req.method}] ${req.url} incoming - body=${JSON.stringify(req.body) || '{}'}`);
-      next();
-    });
 
     const port = process.env.PORT || 3000;
     await app.listen(port, '0.0.0.0');
-    logger.log(`CDL Project Management Backend is running on: ${process.env.BACKEND_URL || 'http://localhost:3000'}`);
+    logger.log(`CDL Project Management Backend is running on port ${port}`);
   } catch (err) {
+    logger.error('Failed to start application', err);
   }
 }
 

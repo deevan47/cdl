@@ -20,7 +20,6 @@ export class UsersService {
 
   // --- LOGIN HELPER (Fixes the password issue) ---
   async findUserForLogin(email: string): Promise<User | null> {
-    this.logger.debug(`findUserForLogin: Fetching ${email}`);
     // Use QueryBuilder to explicitly add the hidden password column
     return this.usersRepository.createQueryBuilder('user')
       .where('user.email = :email', { email })
@@ -65,7 +64,6 @@ export class UsersService {
   }
 
   async create(userData: Partial<User>): Promise<User> {
-    this.logger.log(`create: creating user email=${userData?.email}`);
 
     if (userData.email) {
       const existingUser = await this.findByEmail(userData.email);
@@ -74,7 +72,7 @@ export class UsersService {
       }
     }
 
-    const rawPassword = userData.password; // Capture raw password for Firebase
+    const rawPassword = userData.password; 
 
     // 1. Create in Firebase (if Admin SDK is initialized)
     if (admin.apps.length && rawPassword && userData.email) {
@@ -84,11 +82,8 @@ export class UsersService {
           password: rawPassword,
           displayName: userData.name,
         });
-        this.logger.log(`Created Firebase user: ${userData.email}`);
       } catch (error) {
         this.logger.error(`Failed to create Firebase user: ${error.message}`);
-        // We continue to create in DB, but log the error. 
-        // In a strict mode, we might want to throw here.
       }
     }
 
@@ -103,12 +98,31 @@ export class UsersService {
     // Send Welcome Email if created manually (has password)
     if (userData.password && userData.email) {
       try {
+        const portalLink = process.env.FRONTEND_URL || 'https://your-app-url.com';
+        const emailSubject = 'Welcome to FLAME CDL – Your Account Access Details';
+        const emailBody = `Dear ${userData.name || 'User'},
+
+Welcome to FLAME CDL!
+
+We are pleased to inform you that your user account has been successfully created in our system. Below are your login credentials to access the platform:
+
+Login URL: ${portalLink}
+Username / Email: ${userData.email}
+Temporary Password: ${rawPassword}
+
+Then after that you can login with your Google SSO.
+Please keep your login details confidential and do not share them with anyone. If you experience any issues while accessing the system or have questions regarding your account, feel free to reach out to the FLAME CDL support team.
+
+We're excited to have you on board and look forward to your active participation.
+
+Warm regards,
+FLAME CDL Admin Team`;
+
         await this.notificationsService.sendEmail(
           userData.email,
-          'Welcome to CDL Project Management System',
-          `Welcome to CDL!\n\nYour account has been created.\n\nLogin Email: ${userData.email}\nPassword: ${rawPassword}\n\nYou can also login with Google if your email matches.\n\nBest regards,\nCDL Team`
+          emailSubject,
+          emailBody
         );
-        this.logger.log(`Sent welcome email to ${userData.email}`);
       } catch (e) {
         this.logger.error(`Failed to send welcome email to ${userData.email}`, e);
       }
@@ -149,7 +163,6 @@ export class UsersService {
       try {
         const firebaseUser = await admin.auth().getUserByEmail(user.email);
         await admin.auth().deleteUser(firebaseUser.uid);
-        this.logger.log(`Deleted Firebase user: ${user.email}`);
       } catch (error) {
         this.logger.warn(`Failed to delete Firebase user: ${error.message}`);
       }
@@ -181,13 +194,10 @@ export class UsersService {
         await queryRunner.manager.save(user);
       }
 
-      // Comments are CASCADE, so they will be deleted automatically.
-
       // Finally delete the user
       await queryRunner.manager.remove(user);
 
       await queryRunner.commitTransaction();
-      this.logger.log(`Successfully deleted user ${id} from database`);
     } catch (err) {
       this.logger.error(`Failed to delete user ${id} from database`, err);
       await queryRunner.rollbackTransaction();

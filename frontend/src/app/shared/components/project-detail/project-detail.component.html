@@ -56,6 +56,17 @@
           </div>
           <p class="text-gray-500 dark:text-gray-400 text-sm mb-4">{{ project.scenario }}</p>
 
+          <!-- Admin Project Deadline Edit -->
+          <div *ngIf="isEditMode && currentUser?.role === 'admin'" class="mb-4 flex items-center gap-2">
+            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Project Deadline:</label>
+            <input type="date" [ngModel]="project.deadline | date:'yyyy-MM-dd'"
+              (ngModelChange)="project.deadline = $event; onFieldChange()"
+              class="border rounded px-2 py-1 text-sm bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600">
+          </div>
+          <div *ngIf="!isEditMode && project.deadline" class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+            <span class="font-medium">Deadline:</span> {{ project.deadline | date:'mediumDate' }}
+          </div>
+
           <!-- Manager Info -->
           <div class="flex items-center gap-3">
             <div *ngIf="project.projectManager"

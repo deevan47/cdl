@@ -137,7 +137,7 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
       this.project.stages.forEach(s => weights[s.name.toLowerCase().trim()] = 100 / count);
     }
 
-    console.log('Calculating progress for:', this.project.name, 'Platform:', platform);
+
 
 
     this.project.stages.forEach(stage => {
@@ -154,7 +154,7 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
 
         totalProgress += (stageProgress / 100) * weight;
 
-        console.log(`Stage: ${stageName}, Tasks: ${completedTasks}/${stage.tasks.length}, Progress: ${stage.progress}%, Weight: ${weight}`);
+
       } else {
         // If no tasks, assume 0% for that stage (or keep existing if manual)
         stage.progress = 0;
@@ -162,7 +162,7 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
     });
 
     this.project.overallProgress = Math.round(totalProgress);
-    console.log('Total Progress:', this.project.overallProgress);
+
     this.updateProjectStatus();
   }
 
@@ -203,7 +203,6 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
   }
 
   saveChanges() {
-    console.log('Exiting edit mode');
   }
 
   startEditingName() {
@@ -309,11 +308,9 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
 
     this.projectService.assignUsersToStage(stage.id, newUserIds).subscribe({
       next: () => {
-        console.log('User assigned to stage');
         this.hasUnsavedChanges = true;
       },
       error: (err) => {
-        console.error('Error assigning user to stage:', err);
         // Revert on error
         stage.assignedTeamMembers = stage.assignedTeamMembers.filter(u => u.id !== userId);
       }
@@ -333,11 +330,9 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
 
       this.projectService.assignUsersToStage(stage.id, newUserIds).subscribe({
         next: () => {
-          console.log('User removed from stage');
           this.hasUnsavedChanges = true;
         },
         error: (err) => {
-          console.error('Error removing user from stage:', err);
           // Revert
           stage.assignedTeamMembers = originalMembers;
         }
@@ -433,7 +428,6 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
             status: this.project.status
           }).subscribe({
             next: (updatedProject) => {
-              console.log('Project progress saved:', updatedProject.overallProgress);
             },
             error: (err) => console.error('Error saving project progress:', err)
           });
@@ -524,7 +518,6 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
       endDate: task.endDate
     }).subscribe({
       next: (updated) => {
-        console.log('Task updated:', updated);
       },
       error: (err) => console.error('Failed to update task:', err)
     });
@@ -538,10 +531,9 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
       return true;
     }
 
-    // Users can edit if they are assigned to the STAGE of this task
-    const stage = this.project.stages.find(s => s.id === task.stageId);
-    if (stage) {
-      return stage.assignedTeamMembers.some(u => u.id === this.currentUser?.id);
+    // Users can edit ONLY if they are assigned to this specific TASK
+    if (task.assignedTeamMembers) {
+      return task.assignedTeamMembers.some(u => u.id === this.currentUser?.id);
     }
 
     return false;

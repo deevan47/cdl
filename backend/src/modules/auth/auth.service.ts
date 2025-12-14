@@ -24,7 +24,6 @@ export class AuthService {
         if (firebaseConfigEnv) {
           try {
             serviceAccount = JSON.parse(firebaseConfigEnv);
-            this.logger.log('Firebase Admin initialized with FIREBASE_SERVICE_ACCOUNT environment variable');
           } catch (e) {
             this.logger.warn('Failed to parse FIREBASE_SERVICE_ACCOUNT environment variable', e);
           }
@@ -33,7 +32,6 @@ export class AuthService {
         if (!serviceAccount) {
           const serviceAccountPath = path.join(process.cwd(), 'service-account.json');
           serviceAccount = require(serviceAccountPath);
-          this.logger.log(`Firebase Admin initialized with service account from ${serviceAccountPath}`);
         }
 
         admin.initializeApp({
@@ -79,17 +77,16 @@ export class AuthService {
         throw new UnauthorizedException('Invalid Firebase Token: No email found');
       }
 
-      this.logger.log(`Firebase login attempt for email=${email}`);
+
 
       let user = await this.usersService.findByEmail(email);
 
       if (!user) {
-        this.logger.log(`User not found, creating new PENDING user for ${email}`);
 
         user = await this.usersService.create({
           email,
           name,
-          role: 'user' as any, 
+          role: 'user' as any,
           isActive: false,
           avatar: picture
         });

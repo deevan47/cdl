@@ -46,7 +46,6 @@ let ProjectsService = ProjectsService_1 = class ProjectsService {
         this.logger = new common_1.Logger(ProjectsService_1.name);
     }
     async findAll() {
-        this.logger.debug('findAll: Fetching all projects');
         const projects = await this.projectsRepository.find({
             relations: [
                 'stages',
@@ -59,7 +58,6 @@ let ProjectsService = ProjectsService_1 = class ProjectsService {
                 createdAt: 'DESC'
             }
         });
-        this.logger.log(`findAll: Found ${projects.length} projects`);
         return projects;
     }
     async findOne(id) {
@@ -93,7 +91,6 @@ let ProjectsService = ProjectsService_1 = class ProjectsService {
         });
     }
     async create(createProjectDto) {
-        this.logger.log(`create: Finding manager with ID ${createProjectDto.projectManagerId}`);
         let manager = null;
         if (createProjectDto.projectManagerId) {
             manager = await this.usersRepository.findOne({ where: { id: createProjectDto.projectManagerId } });
@@ -101,10 +98,6 @@ let ProjectsService = ProjectsService_1 = class ProjectsService {
                 this.logger.warn(`create: Project manager with ID ${createProjectDto.projectManagerId} not found`);
                 throw new common_1.NotFoundException(`Project manager not found`);
             }
-            this.logger.log(`create: Found manager ${manager.name}`);
-        }
-        else {
-            this.logger.log('create: No project manager ID provided');
         }
         const project = this.projectsRepository.create({
             name: createProjectDto.name,
@@ -116,7 +109,6 @@ let ProjectsService = ProjectsService_1 = class ProjectsService {
             projectManager: manager || null,
         });
         const savedProject = await this.projectsRepository.save(project);
-        this.logger.log(`create: Project saved with ID ${savedProject.id}, Manager: ${savedProject.projectManager?.id}`);
         const stages = this.createDefaultStages(savedProject, savedProject.platform);
         await this.stagesRepository.save(stages);
         return this.findOne(savedProject.id);
@@ -144,8 +136,17 @@ let ProjectsService = ProjectsService_1 = class ProjectsService {
             });
         });
     }
-    async update(id, updateProjectDto) {
+    async update(id, updateProjectDto, user) {
         const project = await this.findOne(id);
+        if (updateProjectDto.deadline) {
+            const newDeadline = new Date(updateProjectDto.deadline);
+            const currentDeadline = project.deadline ? new Date(project.deadline) : null;
+            if (currentDeadline && newDeadline.getTime() !== currentDeadline.getTime()) {
+                if (user && user.role !== user_entity_1.UserRole.ADMIN) {
+                    throw new common_1.ForbiddenException('Only Administrators can change the project deadline once it has been set.');
+                }
+            }
+        }
         Object.assign(project, updateProjectDto);
         return this.projectsRepository.save(project);
     }
@@ -287,7 +288,6 @@ let ProjectsService = ProjectsService_1 = class ProjectsService {
         });
     }
     async getAssignedProjects(userId) {
-        this.logger.debug(`getAssignedProjects: Fetching projects for userId=${userId}`);
         try {
             const projects = await this.projectsRepository
                 .createQueryBuilder('project')
@@ -301,8 +301,6 @@ let ProjectsService = ProjectsService_1 = class ProjectsService {
                 .orWhere('taskMember.id = :userId', { userId })
                 .orderBy('project.createdAt', 'DESC')
                 .getMany();
-            this.logger.log(`getAssignedProjects: Found ${projects.length} projects for userId=${userId}`);
-            projects.forEach(p => this.logger.debug(`Found project: ${p.id}, Manager: ${p.projectManager?.id}`));
             return projects;
         }
         catch (err) {

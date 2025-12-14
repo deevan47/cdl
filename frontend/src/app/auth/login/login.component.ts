@@ -13,9 +13,7 @@ export class LoginComponent {
   error = '';
   isLoading = false;
 
-  constructor(private auth: AuthService, private router: Router) {
-    console.log('[LOGIN_COMPONENT_INIT] LoginComponent initialized');
-  }
+  constructor(private auth: AuthService, private router: Router) { }
 
   ngOnInit() {
     this.email = '';
@@ -23,8 +21,6 @@ export class LoginComponent {
   }
 
   submit() {
-    console.log('[LOGIN_SUBMIT_START]', { email: this.email });
-
     if (!this.email || !this.email.includes('@')) {
       this.error = 'Please enter a valid email address';
       return;
@@ -38,50 +34,29 @@ export class LoginComponent {
     this.error = '';
     this.isLoading = true;
 
-    console.log('[LOGIN_API_CALL] Sending login request', { email: this.email, passwordLength: this.password.length });
-
     this.auth.login(this.email, this.password).subscribe({
       next: (res) => {
-        console.log('[LOGIN_API_SUCCESS] Received response', {
-          hasToken: !!res?.accessToken,
-          userRole: res?.user?.role,
-        });
-
         if (res?.accessToken && res?.user) {
           try {
-            // Save auth token and user info to localStorage
             localStorage.setItem('token', res.accessToken);
             localStorage.setItem('userInfo', JSON.stringify(res.user));
-            // Save assigned projects (if provided by backend) so guards and UI can use them
             if (res.assignedProjects) {
               localStorage.setItem('assignedProjects', JSON.stringify(res.assignedProjects));
             } else {
-              // ensure key exists for downstream checks
               localStorage.setItem('assignedProjects', JSON.stringify([]));
             }
-            console.log('[LOGIN_STORAGE] assignedProjects count:', ((res.assignedProjects && res.assignedProjects.length) || 0));
-            console.log('[LOGIN_STORAGE] Token and user info saved to localStorage');
-
-            // --- UNIFIED NAVIGATION ---
-            // Navigate to the unified dashboard for all users
-            console.log(`[LOGIN_NAVIGATE] Login successful. Navigating to unified dashboard.`);
             this.router.navigate(['/dashboard']);
-
             this.isLoading = false;
-
           } catch (e) {
-            console.error('[LOGIN_STORAGE_ERROR] Failed to save login info to localStorage', e);
-            this.error = 'Failed to save login info. Check browser console.';
+            this.error = 'Failed to save login info.';
             this.isLoading = false;
           }
         } else {
           this.error = 'Login failed: Invalid response from server.';
-          console.error('[LOGIN_ERROR] Response missing accessToken or user object', res);
           this.isLoading = false;
         }
       },
       error: (err) => {
-        console.error('[LOGIN_API_ERROR] Login API error', err);
         this.error = err?.error?.message || 'Login failed. Please check your credentials.';
         this.isLoading = false;
       }
@@ -91,15 +66,9 @@ export class LoginComponent {
   googleLogin() {
     this.error = '';
     this.isLoading = true;
-    console.log('[LOGIN_GOOGLE_START] Initiating Google Login');
 
     this.auth.loginWithGoogle().subscribe({
       next: (res) => {
-        console.log('[LOGIN_GOOGLE_SUCCESS] Received response', {
-          hasToken: !!res?.accessToken,
-          userRole: res?.user?.role,
-        });
-
         if (res?.accessToken && res?.user) {
           try {
             localStorage.setItem('token', res.accessToken);
@@ -109,13 +78,10 @@ export class LoginComponent {
             } else {
               localStorage.setItem('assignedProjects', JSON.stringify([]));
             }
-            console.log('[LOGIN_STORAGE] Token and user info saved to localStorage');
-            console.log(`[LOGIN_NAVIGATE] Login successful. Navigating to unified dashboard.`);
             this.router.navigate(['/dashboard']);
             this.isLoading = false;
           } catch (e) {
-            console.error('[LOGIN_STORAGE_ERROR] Failed to save login info to localStorage', e);
-            this.error = 'Failed to save login info. Check browser console.';
+            this.error = 'Failed to save login info.';
             this.isLoading = false;
           }
         } else {
@@ -124,7 +90,6 @@ export class LoginComponent {
         }
       },
       error: (err) => {
-        console.error('[LOGIN_GOOGLE_ERROR]', err);
         if (err?.error?.message === 'Your account is pending approval. An email has been sent to the administrator.' ||
           err?.error?.message === 'Your account is pending approval. Please contact the administrator.') {
           this.error = err.error.message;

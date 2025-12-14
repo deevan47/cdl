@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post, Body, Patch, Delete, UseGuards, Put } from '@nestjs/common';
+import { Controller, Get, Param, Post, Body, Patch, Delete, UseGuards, Put, Req } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { JwtAuthGuard } from '../../guards/auth.guard';
 
@@ -39,8 +39,8 @@ export class TasksController {
   }
 
   @Put(':id/assign-user/:userId')
-  assignUserToTask(@Param('id') taskId: string, @Param('userId') userId: string) {
-    return this.tasksService.assignUserToTask(taskId, userId);
+  assignUserToTask(@Param('id') taskId: string, @Param('userId') userId: string, @Req() req) {
+    return this.tasksService.assignUserToTask(taskId, userId, req.user);
   }
 
   @Put(':id/status')

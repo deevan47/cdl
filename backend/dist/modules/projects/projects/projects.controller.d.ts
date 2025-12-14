@@ -18,7 +18,7 @@ export declare class ProjectsController {
     findByPlatform(platform: ProjectPlatform): Promise<Project[]>;
     findOne(id: string): Promise<Project>;
     create(createProjectDto: CreateProjectDto): Promise<Project>;
-    update(id: string, updateProjectDto: UpdateProjectDto): Promise<Project>;
+    update(id: string, updateProjectDto: UpdateProjectDto, req: any): Promise<Project>;
     remove(id: string): Promise<void>;
     assignProjectManager(id: string, managerId: string): Promise<Project>;
     calculateHealth(id: string): Promise<{

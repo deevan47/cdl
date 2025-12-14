@@ -19,7 +19,7 @@ export declare class ProjectsService {
     findByPlatform(platform: ProjectPlatform): Promise<Project[]>;
     create(createProjectDto: CreateProjectDto): Promise<Project>;
     private createDefaultStages;
-    update(id: string, updateProjectDto: UpdateProjectDto): Promise<Project>;
+    update(id: string, updateProjectDto: UpdateProjectDto, user?: any): Promise<Project>;
     remove(id: string): Promise<void>;
     assignProjectManager(projectId: string, managerId: string): Promise<Project>;
     calculateProjectHealth(projectId: string): Promise<{

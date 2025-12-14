@@ -15,5 +15,5 @@ export declare class TasksService {
     remove(id: string): Promise<{
         deleted: boolean;
     }>;
-    assignUserToTask(taskId: string, userId: string): Promise<Task>;
+    assignUserToTask(taskId: string, userId: string, assigner?: any): Promise<Task>;
 }

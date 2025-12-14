@@ -43,7 +43,7 @@ export class ProjectsService {
   ) { }
 
   async findAll(): Promise<Project[]> {
-    this.logger.debug('findAll: Fetching all projects');
+
     const projects = await this.projectsRepository.find({
       relations: [
         'stages',
@@ -56,7 +56,7 @@ export class ProjectsService {
         createdAt: 'DESC'
       }
     });
-    this.logger.log(`findAll: Found ${projects.length} projects`);
+
     return projects;
   }
 
@@ -95,7 +95,6 @@ export class ProjectsService {
   }
 
   async create(createProjectDto: CreateProjectDto): Promise<Project> {
-    this.logger.log(`create: Finding manager with ID ${createProjectDto.projectManagerId}`);
     // Find manager if provided
     let manager: User | null = null;
     if (createProjectDto.projectManagerId) {
@@ -104,9 +103,6 @@ export class ProjectsService {
         this.logger.warn(`create: Project manager with ID ${createProjectDto.projectManagerId} not found`);
         throw new NotFoundException(`Project manager not found`);
       }
-      this.logger.log(`create: Found manager ${manager.name}`);
-    } else {
-      this.logger.log('create: No project manager ID provided');
     }
 
     const project = this.projectsRepository.create({
@@ -119,7 +115,6 @@ export class ProjectsService {
       projectManager: manager || null,
     });
     const savedProject = await this.projectsRepository.save(project);
-    this.logger.log(`create: Project saved with ID ${savedProject.id}, Manager: ${savedProject.projectManager?.id}`);
 
     const stages = this.createDefaultStages(savedProject, savedProject.platform);
     await this.stagesRepository.save(stages);
@@ -319,7 +314,7 @@ export class ProjectsService {
   }
 
   async getAssignedProjects(userId: string): Promise<Project[]> {
-    this.logger.debug(`getAssignedProjects: Fetching projects for userId=${userId}`);
+
     try {
       const projects = await this.projectsRepository
         .createQueryBuilder('project')
@@ -334,8 +329,7 @@ export class ProjectsService {
         .orderBy('project.createdAt', 'DESC')
         .getMany();
 
-      this.logger.log(`getAssignedProjects: Found ${projects.length} projects for userId=${userId}`);
-      projects.forEach(p => this.logger.debug(`Found project: ${p.id}, Manager: ${p.projectManager?.id}`));
+
       return projects;
     } catch (err) {
       this.logger.error(`getAssignedProjects: Error fetching projects for userId=${userId}`, err?.stack || err?.message || err);

@@ -35,7 +35,20 @@ let TasksService = class TasksService {
             .orderBy('task.endDate', 'ASC')
             .getMany();
     }
-    create(createTaskDto) {
+    async create(createTaskDto) {
+        if (createTaskDto.endDate && createTaskDto.stage) {
+            const stage = await this.taskRepository.manager.findOne('ProjectStage', {
+                where: { id: createTaskDto.stage.id || createTaskDto.stage },
+                relations: ['project']
+            });
+            if (stage && stage.project && stage.project.deadline) {
+                const projectDeadline = new Date(stage.project.deadline);
+                const taskDeadline = new Date(createTaskDto.endDate);
+                if (taskDeadline > projectDeadline) {
+                    throw new common_1.BadRequestException(`Task deadline cannot be after the project deadline (${projectDeadline.toDateString()})`);
+                }
+            }
+        }
         const task = this.taskRepository.create(createTaskDto);
         return this.taskRepository.save(task);
     }
@@ -50,6 +63,20 @@ let TasksService = class TasksService {
         return task;
     }
     async update(id, updateTaskDto) {
+        if (updateTaskDto.endDate) {
+            const task = await this.findOne(id);
+            const stage = await this.taskRepository.manager.findOne('ProjectStage', {
+                where: { id: task.stage.id },
+                relations: ['project']
+            });
+            if (stage && stage.project && stage.project.deadline) {
+                const projectDeadline = new Date(stage.project.deadline);
+                const taskDeadline = new Date(updateTaskDto.endDate);
+                if (taskDeadline > projectDeadline) {
+                    throw new common_1.BadRequestException(`Task deadline cannot be after the project deadline (${projectDeadline.toDateString()})`);
+                }
+            }
+        }
         const task = await this.taskRepository.preload({ id, ...updateTaskDto });
         if (!task) {
             throw new common_1.NotFoundException(`Task with ID "${id}" not found`);
@@ -61,7 +88,7 @@ let TasksService = class TasksService {
         await this.taskRepository.remove(task);
         return { deleted: true };
     }
-    async assignUserToTask(taskId, userId) {
+    async assignUserToTask(taskId, userId, assigner) {
         const task = await this.findOne(taskId);
         const user = await this.userRepository.findOne({ where: { id: userId } });
         if (!user) {
@@ -72,7 +99,23 @@ let TasksService = class TasksService {
         }
         if (!task.assignedTeamMembers.some(u => u.id === userId)) {
             task.assignedTeamMembers.push(user);
-            const message = `You have been assigned to task "${task.name}"`;
+            const deadlineStr = task.endDate ? new Date(task.endDate).toLocaleDateString() : 'No deadline';
+            let assignerInfo = '';
+            if (assigner) {
+                let assignerName = assigner.name;
+                let assignerRole = assigner.role;
+                if (!assignerName) {
+                    const assignerUser = await this.userRepository.findOne({ where: { id: assigner.sub || assigner.id } });
+                    if (assignerUser) {
+                        assignerName = assignerUser.name;
+                        assignerRole = assignerUser.role;
+                    }
+                }
+                if (assignerName) {
+                    assignerInfo = ` Assigned by ${assignerRole ? assignerRole.toUpperCase() : 'ADMIN'} (${assignerName})`;
+                }
+            }
+            const message = `You have been assigned to task "${task.name}" with deadline: ${deadlineStr}.${assignerInfo}`;
             await this.notificationsService.create(user.id, 'Task Assigned', message, 'task_assigned', `/projects/${task.stage?.project?.id || ''}`);
             if (user.email) {
                 await this.notificationsService.sendEmail(user.email, 'New Task Assignment', message);

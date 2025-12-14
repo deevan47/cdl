@@ -13,7 +13,6 @@ export class CommentsService {
     ) { }
 
     async create(createCommentDto: CreateCommentDto, user: User) {
-        console.log('CommentsService.create called with:', { createCommentDto, userId: user?.id });
         try {
             const comment = this.commentsRepository.create({
                 content: createCommentDto.content,

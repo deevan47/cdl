@@ -66,8 +66,6 @@ export class TasksService {
     // Validate deadline
     if (updateTaskDto.endDate) {
       const task = await this.findOne(id);
-      // We need to fetch the project to check the deadline. 
-      // The findOne above fetches stage, but we need stage.project
       const stage = await this.taskRepository.manager.findOne('ProjectStage', {
         where: { id: task.stage.id },
         relations: ['project']
@@ -95,7 +93,7 @@ export class TasksService {
     return { deleted: true };
   }
 
-  async assignUserToTask(taskId: string, userId: string): Promise<Task> {
+  async assignUserToTask(taskId: string, userId: string, assigner?: any): Promise<Task> {
     const task = await this.findOne(taskId);
     const user = await this.userRepository.findOne({ where: { id: userId } });
 
@@ -111,7 +109,27 @@ export class TasksService {
       task.assignedTeamMembers.push(user);
 
       // Trigger Notification
-      const message = `You have been assigned to task "${task.name}"`;
+      const deadlineStr = task.endDate ? new Date(task.endDate).toLocaleDateString() : 'No deadline';
+
+      let assignerInfo = '';
+      if (assigner) {
+        let assignerName = assigner.name;
+        let assignerRole = assigner.role;
+
+        if (!assignerName) {
+          const assignerUser = await this.userRepository.findOne({ where: { id: assigner.sub || assigner.id } });
+          if (assignerUser) {
+            assignerName = assignerUser.name;
+            assignerRole = assignerUser.role;
+          }
+        }
+
+        if (assignerName) {
+          assignerInfo = ` Assigned by ${assignerRole ? assignerRole.toUpperCase() : 'ADMIN'} (${assignerName})`;
+        }
+      }
+
+      const message = `You have been assigned to task "${task.name}" with deadline: ${deadlineStr}.${assignerInfo}`;
       await this.notificationsService.create(user.id, 'Task Assigned', message, 'task_assigned', `/projects/${task.stage?.project?.id || ''}`);
 
       // Send Email

@@ -43,7 +43,6 @@ let ProjectsController = ProjectsController_1 = class ProjectsController {
         return this.projectsService.findAll();
     }
     async getAssignedProjects(userId) {
-        this.logger.log(`getAssignedProjects: userId=${userId}`);
         return this.projectsService.getAssignedProjects(userId);
     }
     findByPlatform(platform) {
@@ -53,11 +52,10 @@ let ProjectsController = ProjectsController_1 = class ProjectsController {
         return this.projectsService.findOne(id);
     }
     create(createProjectDto) {
-        this.logger.log(`create: Creating project name=${createProjectDto.name}`);
         return this.projectsService.create(createProjectDto);
     }
-    update(id, updateProjectDto) {
-        return this.projectsService.update(id, updateProjectDto);
+    update(id, updateProjectDto, req) {
+        return this.projectsService.update(id, updateProjectDto, req.user);
     }
     remove(id) {
         return this.projectsService.remove(id);
@@ -131,8 +129,9 @@ __decorate([
     (0, common_1.Put)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, update_project_dto_1.UpdateProjectDto]),
+    __metadata("design:paramtypes", [String, update_project_dto_1.UpdateProjectDto, Object]),
     __metadata("design:returntype", Promise)
 ], ProjectsController.prototype, "update", null);
 __decorate([
