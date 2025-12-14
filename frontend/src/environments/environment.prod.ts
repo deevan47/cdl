@@ -3,4 +3,4 @@ export const environment = {
     apiUrl: 'https://cdl-backend-hq90.onrender.com',
     backendUrl: 'https://cdl-backend-hq90.onrender.com',
     frontendUrl: 'https://cdl-frontend-g5ws.onrender.com' 
-};
+}
