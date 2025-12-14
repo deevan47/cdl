@@ -16,25 +16,36 @@ export class AuthService {
     private usersService: UsersService,
     private notificationsService: NotificationsService
   ) {
-    // Initialize Firebase Admin if not already initialized
     if (!admin.apps.length) {
       try {
-        const serviceAccountPath = path.join(process.cwd(), 'service-account.json');
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const serviceAccount = require(serviceAccountPath);
+        const firebaseConfigEnv = process.env.FIREBASE_SERVICE_ACCOUNT;
+        let serviceAccount;
+
+        if (firebaseConfigEnv) {
+          try {
+            serviceAccount = JSON.parse(firebaseConfigEnv);
+            this.logger.log('Firebase Admin initialized with FIREBASE_SERVICE_ACCOUNT environment variable');
+          } catch (e) {
+            this.logger.warn('Failed to parse FIREBASE_SERVICE_ACCOUNT environment variable', e);
+          }
+        }
+
+        if (!serviceAccount) {
+          const serviceAccountPath = path.join(process.cwd(), 'service-account.json');
+          serviceAccount = require(serviceAccountPath);
+          this.logger.log(`Firebase Admin initialized with service account from ${serviceAccountPath}`);
+        }
 
         admin.initializeApp({
           credential: admin.credential.cert(serviceAccount),
         });
-        this.logger.log(`Firebase Admin initialized with service account from ${serviceAccountPath}`);
       } catch (error) {
-        this.logger.warn('Failed to initialize Firebase Admin. Make sure service-account.json exists in backend root.', error);
+        this.logger.warn('Failed to initialize Firebase Admin. Make sure FIREBASE_SERVICE_ACCOUNT env var is set or service-account.json exists.', error);
       }
     }
   }
 
   async login(email: string, password: string) {
-    // 1. Get User WITH password
     const user = await this.usersService.findUserForLogin(email);
 
     if (!user) {
@@ -42,7 +53,6 @@ export class AuthService {
     }
 
     if (!user.password) {
-      // If this happens now, it means the DB column is literally NULL
       throw new UnauthorizedException('Password not set for user');
     }
 
@@ -50,7 +60,6 @@ export class AuthService {
       throw new UnauthorizedException('Your account is pending approval. Please contact the administrator.');
     }
 
-    // 2. Compare
     const matches = await bcrypt.compare(password, user.password);
     if (!matches) {
       throw new UnauthorizedException('Invalid password');
@@ -61,7 +70,6 @@ export class AuthService {
 
   async loginWithFirebase(token: string) {
     try {
-      // 1. Verify Firebase Token
       const decodedToken = await admin.auth().verifyIdToken(token);
       const email = decodedToken.email;
       const name = decodedToken.name || email.split('@')[0];
@@ -73,18 +81,16 @@ export class AuthService {
 
       this.logger.log(`Firebase login attempt for email=${email}`);
 
-      // 2. Find User in DB
       let user = await this.usersService.findByEmail(email);
 
       if (!user) {
         this.logger.log(`User not found, creating new PENDING user for ${email}`);
 
-        // Auto-create user as INACTIVE
         user = await this.usersService.create({
           email,
           name,
-          role: 'user' as any, // Default role
-          isActive: false, // PENDING APPROVAL
+          role: 'user' as any, 
+          isActive: false,
           avatar: picture
         });
 
@@ -103,7 +109,6 @@ export class AuthService {
           }
 
           // 2. Create In-App Notification for ALL Admins
-          // We need to find the admin User entities first
           const adminUsers = await this.usersService.findByRole('admin' as any);
           for (const adminUser of adminUsers) {
             await this.notificationsService.create(
