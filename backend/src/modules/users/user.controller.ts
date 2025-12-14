@@ -1,12 +1,12 @@
 import { Controller, Get, Post, Put, Delete, Param, Body } from '@nestjs/common';
-import { UsersService } from './users.service';
+import { UsersService } from './user.service';
 import { User } from './entities/user.entity';
 import { UserRole } from './entities/user.entity';
 import { Project } from '../projects/entities/project.entity';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
   @Get()
   findAll(): Promise<User[]> {

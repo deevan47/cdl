@@ -1,9 +1,9 @@
 import { Controller, Get, ForbiddenException } from '@nestjs/common';
-import { UsersService } from '../users/users.service';
+import { UsersService } from '../users/user.service';
 
 @Controller('debug')
 export class DebugController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
   @Get('users')
   async listAllUsers() {
