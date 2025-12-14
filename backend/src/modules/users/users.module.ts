@@ -1,7 +1,7 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { UsersService } from './user.service';
-import { UsersController } from './user.controller';
+import { UsersService } from './users.service';
+import { UsersController } from './users.controller';
 import { User } from './entities/user.entity';
 import { TasksModule } from '../tasks/tasks.module';
 import { NotificationsModule } from '../notifications/notifications.module';
