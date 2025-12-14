@@ -5,7 +5,7 @@ import { AuthService } from './auth.service';
 export class AuthController {
   private readonly logger = new Logger(AuthController.name);
 
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) { }
 
   @Post('login')
   @HttpCode(200)
@@ -19,6 +19,21 @@ export class AuthController {
       this.logger.error(`Login failed for email=${body?.email}`, err?.stack || err?.message || err);
       // rethrow so Nest handles the response code, but include helpful message
       throw err instanceof UnauthorizedException ? err : new UnauthorizedException('Login failed. Check server logs for details.');
+    }
+  }
+
+  // Force recompile
+  @Post('firebase-login')
+  @HttpCode(200)
+  async firebaseLogin(@Body() body: { token: string }) {
+    this.logger.log(`Firebase Login attempt`);
+    try {
+      const result = await this.authService.loginWithFirebase(body.token);
+      this.logger.log(`Firebase Login success`);
+      return result;
+    } catch (err) {
+      this.logger.error(`Firebase Login failed`, err);
+      throw err;
     }
   }
 

@@ -21,6 +21,8 @@ import { CommentsComponent } from './shared/components/comments/comments.compone
 import { ProjectPageComponent } from './user/project-page/project-page.component';
 import { DashboardWrapperComponent } from './dashboard-wrapper/dashboard-wrapper.component';
 import { UserProfileComponent } from './user/user-profile/user-profile.component';
+import { NotificationsComponent } from './shared/components/notifications/notifications.component';
+import { AvatarComponent } from './shared/components/avatar/avatar.component';
 
 @NgModule({
   declarations: [
@@ -36,7 +38,10 @@ import { UserProfileComponent } from './user/user-profile/user-profile.component
     CommentsComponent,
     ProjectPageComponent,
     DashboardWrapperComponent,
-    UserProfileComponent
+    UserProfileComponent,
+    UserProfileComponent,
+    NotificationsComponent,
+    AvatarComponent
   ],
   imports: [
     BrowserModule,

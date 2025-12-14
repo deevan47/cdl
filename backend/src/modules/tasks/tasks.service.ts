@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Task } from './entities/task.entity';
 import { User } from '../users/entities/user.entity';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 /**
@@ -14,6 +15,7 @@ export class TasksService {
     private readonly taskRepository: Repository<Task>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly notificationsService: NotificationsService,
   ) { }
 
   async findTasksByUserId(userId: string): Promise<Task[]> {
@@ -72,6 +74,15 @@ export class TasksService {
 
     if (!task.assignedTeamMembers.some(u => u.id === userId)) {
       task.assignedTeamMembers.push(user);
+
+      // Trigger Notification
+      const message = `You have been assigned to task "${task.name}"`;
+      await this.notificationsService.create(user.id, 'Task Assigned', message, 'task_assigned', `/projects/${task.stage?.project?.id || ''}`);
+
+      // Send Email
+      if (user.email) {
+        await this.notificationsService.sendEmail(user.email, 'New Task Assignment', message);
+      }
     }
 
     return this.taskRepository.save(task);

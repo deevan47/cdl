@@ -1,0 +1,8 @@
+node_modules
+.env
+.angular
+backend/service-account.json
+frontend/.angular
+dist
+backend/dist
+frontend/dist

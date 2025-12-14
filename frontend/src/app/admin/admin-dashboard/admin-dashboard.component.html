@@ -16,9 +16,20 @@
       <button (click)="navigateToSection('projects')" [class]="getSectionNavClass('projects')">
         Projects
       </button>
-      <button (click)="navigateToSection('users')" [class]="getSectionNavClass('users')">
-        User Management
+      <button [class]="getSectionNavClass('users')" (click)="navigateToSection('users')">
+        <i class="fas fa-users w-6"></i>
+        <span>User Management</span>
       </button>
+
+      <button [class]="getSectionNavClass('notifications')" (click)="navigateToSection('notifications')">
+        <i class="fas fa-bell w-6"></i>
+        <span>Notifications</span>
+        <span *ngIf="unreadNotificationsCount > 0"
+          class="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+          {{ unreadNotificationsCount }}
+        </span>
+      </button>
+
       <button (click)="navigateToSection('settings')" [class]="getSectionNavClass('settings')">
         Settings
       </button>
@@ -55,7 +66,7 @@
   <div class="flex-1 flex flex-col overflow-hidden">
     <!-- Search Bar -->
     <div
-      class="bg-white dark:bg-gray-900 border-b border-gray-300 dark:border-gray-600 p-4 sticky top-0 z-10 shadow-sm flex gap-4">
+      class="bg-white dark:bg-gray-900 border-b border-gray-300 dark:border-gray-600 p-4 sticky top-0 z-10 shadow-sm flex gap-4 items-center">
       <div class="relative max-w-md flex-1">
         <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
@@ -69,7 +80,44 @@
           placeholder="Search projects...">
       </div>
 
-      <div class="flex-1"></div> <!-- Spacer to push download button to right -->
+      <div class="flex-1"></div> <!-- Spacer -->
+
+      <!-- Notification Bell -->
+      <div class="relative">
+        <button (click)="toggleNotifications()"
+          class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 relative">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600 dark:text-gray-300" fill="none"
+            viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          </svg>
+          <span *ngIf="unreadNotificationsCount > 0"
+            class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 transform translate-x-1/4 -translate-y-1/4 bg-red-600 rounded-full">{{
+            unreadNotificationsCount }}</span>
+        </button>
+
+        <!-- Dropdown -->
+        <div *ngIf="showNotifications"
+          class="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden z-50 border border-gray-200 dark:border-gray-700">
+          <div class="p-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <h3 class="font-semibold text-gray-800 dark:text-white">Notifications</h3>
+            <button (click)="markAllAsRead()" class="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400">Mark
+              all read</button>
+          </div>
+          <div class="max-h-96 overflow-y-auto">
+            <div *ngFor="let notification of notifications"
+              class="p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition"
+              [class.bg-blue-50]="!notification.isRead" [class.dark:bg-blue-900_20]="!notification.isRead">
+              <p class="text-sm font-medium text-gray-800 dark:text-white">{{ notification.title }}</p>
+              <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">{{ notification.message }}</p>
+              <p class="text-xs text-gray-400 mt-2">{{ notification.createdAt | date:'short' }}</p>
+            </div>
+            <div *ngIf="notifications.length === 0" class="p-4 text-center text-gray-500 text-sm">
+              No notifications
+            </div>
+          </div>
+        </div>
+      </div>
 
       <button *ngIf="currentSection === 'dashboard'" (click)="downloadCSV()"
         class="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition shadow-md font-medium text-base">
@@ -222,10 +270,9 @@
               <p class="text-gray-500 dark:text-gray-400 text-sm mb-4 line-clamp-2">{{ project.scenario }}</p>
 
               <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-300 dark:border-gray-600">
-                <div class="flex items-center gap-2">
-                  <img [src]="project.projectManager?.avatar || 'assets/default-avatar.png'"
-                    class="w-6 h-6 rounded-full hover:ring-2 hover:ring-blue-500 transition-all"
-                    (click)="project.projectManager ? navigateToProfile(project.projectManager.id, $event) : null">
+                <div class="flex items-center gap-2"
+                  (click)="project.projectManager ? navigateToProfile(project.projectManager.id, $event) : null">
+                  <app-avatar [name]="project.projectManager?.name || 'Unassigned'" size="xs"></app-avatar>
                   <span class="text-sm text-gray-600 dark:text-gray-300">{{ project.projectManager?.name || 'Unassigned'
                     }}</span>
                 </div>
@@ -356,6 +403,8 @@
                   <td class="p-3 text-gray-600 dark:text-gray-400">{{ user.email }}</td>
                   <td class="p-3 text-gray-800 dark:text-gray-200">
                     {{ formatRole(user.role) }}
+                    <span *ngIf="user.designation" class="block text-xs text-gray-500 dark:text-gray-400">{{
+                      user.designation }}</span>
                   </td>
                   <td class="p-3 flex gap-2">
                     <button (click)="openEditUserModal(user)" class="text-blue-600 hover:text-blue-800">
@@ -387,6 +436,78 @@
         <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-8">Settings</h1>
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
           <p class="text-gray-600 dark:text-gray-400">System settings and configuration will be implemented here.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notifications View -->
+    <div *ngIf="currentSection === 'notifications'" class="flex-1 overflow-y-auto p-6">
+      <div class="space-y-6">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Notifications</h2>
+            <p class="text-gray-500 dark:text-gray-400">Manage your alerts and requests</p>
+          </div>
+          <div class="flex gap-3">
+            <button (click)="markAllAsRead()"
+              class="px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+              Mark all as read
+            </button>
+            <button (click)="openUserCreationModal()"
+              class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
+              <i class="fas fa-plus"></i>
+              <span>Create User</span>
+            </button>
+          </div>
+        </div>
+
+        <div
+          class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div *ngIf="notifications.length === 0" class="p-8 text-center text-gray-500 dark:text-gray-400">
+            <i class="fas fa-bell-slash text-4xl mb-4 text-gray-300"></i>
+            <p>No notifications yet</p>
+          </div>
+
+          <div *ngFor="let notification of notifications"
+            class="p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
+            [class.bg-blue-50]="!notification.isRead" [class.dark:bg-blue-900_10]="!notification.isRead"
+            (click)="onNotificationClick(notification)">
+            <div class="flex gap-4">
+              <div class="flex-shrink-0 mt-1">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center" [ngClass]="{
+                       'bg-blue-100 text-blue-600': notification.type === 'info',
+                       'bg-green-100 text-green-600': notification.type === 'success',
+                       'bg-yellow-100 text-yellow-600': notification.type === 'warning',
+                       'bg-red-100 text-red-600': notification.type === 'error'
+                     }">
+                  <i class="fas" [ngClass]="{
+                    'fa-info-circle': notification.type === 'info',
+                    'fa-check-circle': notification.type === 'success',
+                    'fa-exclamation-triangle': notification.type === 'warning',
+                    'fa-exclamation-circle': notification.type === 'error'
+                  }"></i>
+                </div>
+              </div>
+              <div class="flex-1">
+                <div class="flex justify-between items-start">
+                  <h4 class="font-semibold text-gray-900 dark:text-white mb-1"
+                    [class.text-blue-600]="!notification.isRead">
+                    {{ notification.title }}
+                  </h4>
+                  <span class="text-xs text-gray-500 whitespace-nowrap">
+                    {{ notification.created_at | date:'MMM d, h:mm a' }}
+                  </span>
+                </div>
+                <p class="text-gray-600 dark:text-gray-300 text-sm mb-2">{{ notification.message }}</p>
+                <div class="flex gap-2" *ngIf="notification.link">
+                  <button class="text-xs font-medium text-blue-600 hover:text-blue-800"
+                    (click)="$event.stopPropagation()">
+                    View Details
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -435,6 +556,11 @@
           <option value="user">User</option>
           <option value="admin">Admin</option>
         </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Designation</label>
+        <input [(ngModel)]="newUser.designation" type="text" placeholder="e.g. Animator, Research Associate"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
       </div>
     </div>
 

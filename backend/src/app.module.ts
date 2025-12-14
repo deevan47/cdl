@@ -1,34 +1,42 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ProjectsModule } from './modules/projects/projects/projects.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UsersModule } from './modules/users/users.module';
-import { TasksModule } from './modules/tasks/tasks.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { ProjectsModule } from './modules/projects/projects/projects.module';
+import { TasksModule } from './modules/tasks/tasks.module';
 import { CommentsModule } from './modules/comments/comments.module';
-import { AppController } from './app.controller';
-import { DebugController } from './modules/debug/debug.controller';
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { User } from './modules/users/entities/user.entity';
+import { Project } from './modules/projects/entities/project.entity';
+import { ProjectStage } from './modules/projects/entities/project-stage.entity';
+import { Task } from './modules/tasks/entities/task.entity';
+import { Comment } from './modules/comments/entities/comment.entity';
+import { Notification } from './modules/notifications/entities/notification.entity';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }), // Added ConfigModule
-    TypeOrmModule.forRootAsync({ // Changed to forRootAsync
+    ConfigModule.forRoot({ isGlobal: true }),
+    TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
-        url: configService.get('DATABASE_URL'),
-        autoLoadEntities: true,
-        synchronize: true, // Auto-create tables (dev only)
+        host: configService.get<string>('DB_HOST') || 'localhost',
+        port: configService.get<number>('DB_PORT') || 5432,
+        username: configService.get<string>('DB_USERNAME') || 'postgres',
+        password: configService.get<string>('DB_PASSWORD') || 'postgres',
+        database: configService.get<string>('DB_NAME') || 'cdl_pms',
+        entities: [User, Project, ProjectStage, Task, Comment, Notification],
+        synchronize: true,
       }),
       inject: [ConfigService],
     }),
-    AuthModule,
     UsersModule,
+    AuthModule,
     ProjectsModule,
     TasksModule,
     CommentsModule,
+    NotificationsModule,
   ],
-  controllers: [AppController], // Removed DebugController
-  providers: [], // AppService was not in original, so keeping it empty or adding it would be an unrelated edit. Keeping it empty.
 })
 export class AppModule { }

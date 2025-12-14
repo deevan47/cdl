@@ -121,11 +121,16 @@ export class UserManagementComponent implements OnInit {
 
   getAllRoles(): UserRole[] {
     return [
+      UserRole.ADMIN,
       UserRole.PROJECT_MANAGER,
       UserRole.LEAD_DESIGNER,
+      UserRole.RESEARCH_ASSOCIATE,
       UserRole.LEAD_DEVELOPER,
       UserRole.QA_ENGINEER,
-      UserRole.CONTENT_STRATEGIST
+      UserRole.CONTENT_STRATEGIST,
+      UserRole.JR_DEVELOPER,
+      UserRole.EDITOR,
+      UserRole.ANIMATOR
     ];
   }
 }

@@ -5,7 +5,7 @@ export class AppController {
   @Get()
   getHealth() {
     return {
-      message: '✅ CDL Project Management API is running',
+      message: 'CDL Project Management API is running',
       status: 'online',
       version: '1.0.0',
       timestamp: new Date().toISOString(),

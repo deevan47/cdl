@@ -398,6 +398,30 @@ export class ProjectDetailComponent implements OnInit, OnChanges {
     }
   }
 
+  deleteTask(task: Task) {
+    if (!this.project) return;
+    if (confirm(`Are you sure you want to delete task "${task.name}"? This action cannot be undone.`)) {
+      this.taskService.deleteTask(task.id).subscribe({
+        next: () => {
+          if (this.project) {
+            const stage = this.project.stages.find(s => s.id === task.stageId);
+            if (stage) {
+              stage.tasks = stage.tasks.filter(t => t.id !== task.id);
+              this.calculateProgress();
+
+              // Save progress after deletion
+              this.projectService.updateProject(this.project.id, {
+                overallProgress: this.project.overallProgress,
+                status: this.project.status
+              }).subscribe();
+            }
+          }
+        },
+        error: (err) => console.error('Error deleting task:', err)
+      });
+    }
+  }
+
   toggleTaskCompletion(task: Task) {
     const newStatus = !task.isCompleted;
     const originalAssignedMembers = [...(task.assignedTeamMembers || [])]; // Preserve original members

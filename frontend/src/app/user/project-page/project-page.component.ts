@@ -76,7 +76,15 @@ export class ProjectPageComponent implements OnInit {
     onTaskCreated() {
         this.closeTaskModal();
         if (this.project) {
-            this.loadProject(this.project.id);
+            this.loading = true;
+            this.project = null; // Force view reset
+            const projectId = this.route.snapshot.paramMap.get('id');
+            if (projectId) {
+                // Small timeout to allow the view to clear and backend to settle
+                setTimeout(() => {
+                    this.loadProject(projectId);
+                }, 100);
+            }
         }
     }
 }

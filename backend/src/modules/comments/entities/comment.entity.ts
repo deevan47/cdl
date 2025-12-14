@@ -13,7 +13,7 @@ export class Comment {
     @CreateDateColumn()
     createdAt: Date;
 
-    @ManyToOne(() => User, { eager: true })
+    @ManyToOne(() => User, { eager: true, onDelete: 'CASCADE' })
     user: User;
 
     @ManyToOne(() => Project, (project) => project.comments, { onDelete: 'CASCADE' })

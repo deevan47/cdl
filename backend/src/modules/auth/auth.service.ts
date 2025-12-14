@@ -1,19 +1,42 @@
 import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
+import * as admin from 'firebase-admin';
+
+import * as path from 'path';
 
 @Injectable()
 export class AuthService {
   private jwtSecret = process.env.JWT_SECRET || 'dev_secret_change_me';
   private readonly logger = new Logger(AuthService.name);
 
-  constructor(private usersService: UsersService) {}
+  constructor(
+    private usersService: UsersService,
+    private notificationsService: NotificationsService
+  ) {
+    // Initialize Firebase Admin if not already initialized
+    if (!admin.apps.length) {
+      try {
+        const serviceAccountPath = path.join(process.cwd(), 'service-account.json');
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const serviceAccount = require(serviceAccountPath);
+
+        admin.initializeApp({
+          credential: admin.credential.cert(serviceAccount),
+        });
+        this.logger.log(`Firebase Admin initialized with service account from ${serviceAccountPath}`);
+      } catch (error) {
+        this.logger.warn('Failed to initialize Firebase Admin. Make sure service-account.json exists in backend root.', error);
+      }
+    }
+  }
 
   async login(email: string, password: string) {
     // 1. Get User WITH password
     const user = await this.usersService.findUserForLogin(email);
-    
+
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
@@ -23,12 +46,103 @@ export class AuthService {
       throw new UnauthorizedException('Password not set for user');
     }
 
+    if (!user.isActive) {
+      throw new UnauthorizedException('Your account is pending approval. Please contact the administrator.');
+    }
+
     // 2. Compare
     const matches = await bcrypt.compare(password, user.password);
     if (!matches) {
       throw new UnauthorizedException('Invalid password');
     }
 
+    return this.generateUserResponse(user);
+  }
+
+  async loginWithFirebase(token: string) {
+    try {
+      // 1. Verify Firebase Token
+      const decodedToken = await admin.auth().verifyIdToken(token);
+      const email = decodedToken.email;
+      const name = decodedToken.name || email.split('@')[0];
+      const picture = decodedToken.picture;
+
+      if (!email) {
+        throw new UnauthorizedException('Invalid Firebase Token: No email found');
+      }
+
+      this.logger.log(`Firebase login attempt for email=${email}`);
+
+      // 2. Find User in DB
+      let user = await this.usersService.findByEmail(email);
+
+      if (!user) {
+        this.logger.log(`User not found, creating new PENDING user for ${email}`);
+
+        // Auto-create user as INACTIVE
+        user = await this.usersService.create({
+          email,
+          name,
+          role: 'user' as any, // Default role
+          isActive: false, // PENDING APPROVAL
+          avatar: picture
+        });
+
+        // Notify Admins
+        try {
+          const admins = await this.usersService.findByRole('admin' as any);
+          const adminEmails = admins.map(a => a.email);
+
+          for (const adminEmail of adminEmails) {
+            // 1. Send Email
+            await this.notificationsService.sendEmail(
+              adminEmail,
+              'New User Registration Request',
+              `A new user has registered and is awaiting approval.\n\nName: ${name}\nEmail: ${email}\n\nPlease log in to the admin dashboard to approve this user.`
+            );
+          }
+
+          // 2. Create In-App Notification for ALL Admins
+          // We need to find the admin User entities first
+          const adminUsers = await this.usersService.findByRole('admin' as any);
+          for (const adminUser of adminUsers) {
+            await this.notificationsService.create(
+              adminUser.id,
+              'New User Request',
+              `${name} (${email}) has requested access.`,
+              'info'
+            );
+          }
+        } catch (e) {
+          this.logger.error('Failed to notify admins', e);
+        }
+
+        throw new UnauthorizedException('Your account is pending approval. An email has been sent to the administrator.');
+      }
+
+      if (!user.isActive) {
+        throw new UnauthorizedException('Your account is pending approval. Please contact the administrator.');
+      }
+
+      // Update avatar if changed
+      if (picture && user.avatar !== picture) {
+        await this.usersService.update(user.id, { avatar: picture });
+        user.avatar = picture;
+      }
+
+      // 3. Return Session
+      return this.generateUserResponse(user);
+
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      this.logger.error('Firebase token verification failed', error);
+      throw new UnauthorizedException('Invalid Firebase Token');
+    }
+  }
+
+  private async generateUserResponse(user: any) {
     // 3. Token
     const payload = { sub: user.id, email: user.email, role: user.role };
     const token = jwt.sign(payload, this.jwtSecret, { expiresIn: '7d' });
@@ -37,11 +151,11 @@ export class AuthService {
     let assignedProjects = [];
     try {
       assignedProjects = await this.usersService.getAssignedProjects(user.id);
-    } catch (e) {}
+    } catch (e) { }
 
     return {
       accessToken: token,
-      user: { id: user.id, email: user.email, name: user.name, role: user.role },
+      user: { id: user.id, email: user.email, name: user.name, role: user.role, avatar: user.avatar },
       assignedProjects,
     };
   }

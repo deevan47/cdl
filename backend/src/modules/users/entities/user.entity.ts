@@ -29,6 +29,9 @@ export class User {
   role: UserRole;
 
   @Column({ nullable: true })
+  designation: string;
+
+  @Column({ nullable: true })
   avatar: string;
 
   @Column({ type: 'text', nullable: true, select: false })

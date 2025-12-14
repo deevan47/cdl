@@ -7,6 +7,7 @@ import { ProjectPageComponent } from './user/project-page/project-page.component
 import { UserProfileComponent } from './user/user-profile/user-profile.component';
 import { AuthGuard } from './shared/guards/auth.guard';
 import { RoleGuard } from './shared/guards/role.guard';
+import { NotificationsComponent } from './shared/components/notifications/notifications.component';
 
 const routes: Routes = [
   { path: '', redirectTo: 'auth/login', pathMatch: 'full' },
@@ -37,6 +38,11 @@ const routes: Routes = [
   {
     path: 'profile/:id',
     component: UserProfileComponent,
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'notifications',
+    component: NotificationsComponent,
     canActivate: [AuthGuard]
   }
 ];

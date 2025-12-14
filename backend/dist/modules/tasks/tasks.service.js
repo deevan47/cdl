@@ -18,10 +18,12 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const task_entity_1 = require("./entities/task.entity");
 const user_entity_1 = require("../users/entities/user.entity");
+const notifications_service_1 = require("../notifications/notifications.service");
 let TasksService = class TasksService {
-    constructor(taskRepository, userRepository) {
+    constructor(taskRepository, userRepository, notificationsService) {
         this.taskRepository = taskRepository;
         this.userRepository = userRepository;
+        this.notificationsService = notificationsService;
     }
     async findTasksByUserId(userId) {
         return this.taskRepository
@@ -70,6 +72,11 @@ let TasksService = class TasksService {
         }
         if (!task.assignedTeamMembers.some(u => u.id === userId)) {
             task.assignedTeamMembers.push(user);
+            const message = `You have been assigned to task "${task.name}"`;
+            await this.notificationsService.create(user.id, 'Task Assigned', message, 'task_assigned', `/projects/${task.stage?.project?.id || ''}`);
+            if (user.email) {
+                await this.notificationsService.sendEmail(user.email, 'New Task Assignment', message);
+            }
         }
         return this.taskRepository.save(task);
     }
@@ -80,6 +87,7 @@ exports.TasksService = TasksService = __decorate([
     __param(0, (0, typeorm_1.InjectRepository)(task_entity_1.Task)),
     __param(1, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
-        typeorm_2.Repository])
+        typeorm_2.Repository,
+        notifications_service_1.NotificationsService])
 ], TasksService);
 //# sourceMappingURL=tasks.service.js.map

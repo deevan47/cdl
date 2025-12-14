@@ -6,6 +6,8 @@ import { User } from '../../shared/models/user.model';
 import { AuthService } from '../../shared/services/auth.service';
 import { Router, ActivatedRoute } from '@angular/router';
 
+import { NotificationsService } from '../../shared/services/notifications.service';
+
 @Component({
   selector: 'app-admin-dashboard',
   templateUrl: './admin-dashboard.component.html',
@@ -25,23 +27,29 @@ export class AdminDashboardComponent implements OnInit {
 
   showTaskModal = false;
   selectedStageId: string = '';
-  currentSection: 'dashboard' | 'projects' | 'users' | 'settings' = 'dashboard';
+  currentSection: 'dashboard' | 'projects' | 'users' | 'settings' | 'notifications' = 'dashboard';
 
   showProjectCreationModal = false;
   selectedPlatformForCreation!: ProjectPlatform;
 
   showUserCreationModal = false;
   isEditingUser = false;
-  newUser: any = { name: '', email: '', password: '', role: 'user' };
+  newUser: any = { name: '', email: '', password: '', role: 'user', designation: '' };
 
   searchQuery = '';
   selectedStatusFilter = 'all';
   currentUser: User | null = null;
 
+  // Notifications
+  notifications: any[] = [];
+  showNotifications = false;
+  unreadNotificationsCount = 0;
+
   constructor(
     private projectService: ProjectService,
     private userService: UserService,
     public authService: AuthService,
+    private notificationsService: NotificationsService,
     private router: Router,
     private route: ActivatedRoute
   ) { }
@@ -49,6 +57,9 @@ export class AdminDashboardComponent implements OnInit {
   ngOnInit() {
     this.authService.currentUser.subscribe(user => {
       this.currentUser = user ? (user.user || user) : null;
+      if (this.currentUser) {
+        this.loadNotifications();
+      }
     });
 
     this.loadProjects();
@@ -186,7 +197,7 @@ export class AdminDashboardComponent implements OnInit {
     return role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   }
 
-  navigateToSection(section: 'dashboard' | 'projects' | 'users' | 'settings') {
+  navigateToSection(section: 'dashboard' | 'projects' | 'users' | 'settings' | 'notifications') {
     this.currentSection = section;
 
     // Reset filters when navigating to main sections
@@ -420,7 +431,7 @@ export class AdminDashboardComponent implements OnInit {
 
   openUserCreationModal() {
     this.isEditingUser = false;
-    this.newUser = { name: '', email: '', password: '', role: 'user' };
+    this.newUser = { name: '', email: '', password: '', role: 'user', designation: '' };
     this.showUserCreationModal = true;
   }
 
@@ -432,7 +443,7 @@ export class AdminDashboardComponent implements OnInit {
 
   closeUserCreationModal() {
     this.showUserCreationModal = false;
-    this.newUser = { name: '', email: '', password: '', role: 'user' };
+    this.newUser = { name: '', email: '', password: '', role: 'user', designation: '' };
   }
 
   saveUser() {
@@ -440,19 +451,67 @@ export class AdminDashboardComponent implements OnInit {
 
     if (this.isEditingUser) {
       console.log('Update user:', this.newUser);
-      this.loadAvailableManagers();
-      this.closeUserCreationModal();
+      this.userService.updateUser(this.newUser.id, this.newUser).subscribe({
+        next: () => {
+          this.loadAvailableManagers();
+          this.closeUserCreationModal();
+        },
+        error: (err) => console.error('Error updating user:', err)
+      });
     } else {
       console.log('Create user:', this.newUser);
-      this.loadAvailableManagers();
-      this.closeUserCreationModal();
+      this.userService.createUser(this.newUser).subscribe({
+        next: () => {
+          this.loadAvailableManagers();
+          this.closeUserCreationModal();
+        },
+        error: (err) => console.error('Error creating user:', err)
+      });
     }
   }
 
   deleteUser(userId: string) {
     if (confirm('Are you sure you want to delete this user?')) {
-      console.log('Delete user:', userId);
-      this.loadAvailableManagers();
+      this.userService.deleteUser(userId).subscribe({
+        next: () => {
+          this.loadAvailableManagers();
+        },
+        error: (err) => console.error('Error deleting user:', err)
+      });
     }
+  }
+
+  // Notification Methods
+  loadNotifications() {
+    if (!this.currentUser) return;
+    this.notificationsService.getMyNotifications().subscribe({
+      next: (notifs) => {
+        this.notifications = notifs;
+        this.unreadNotificationsCount = notifs.filter((n: any) => !n.isRead).length;
+      },
+      error: (err) => console.error('Error loading notifications', err)
+    });
+  }
+
+  toggleNotifications() {
+    this.showNotifications = !this.showNotifications;
+    if (this.showNotifications) {
+      this.loadNotifications();
+    }
+  }
+
+  markAllAsRead() {
+    // Ideally call backend to mark all as read
+    this.notifications.forEach(n => n.isRead = true);
+    this.unreadNotificationsCount = 0;
+  }
+  onNotificationClick(notification: any) {
+    this.notificationsService.toggleReadStatus(notification.id).subscribe({
+      next: () => {
+        notification.isRead = !notification.isRead;
+        this.unreadNotificationsCount = this.notifications.filter(n => !n.isRead).length;
+      },
+      error: (err) => console.error('Error toggling notification status', err)
+    });
   }
 }

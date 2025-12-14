@@ -12,9 +12,9 @@ export const dataSourceOptions: DataSourceOptions = {
   password: process.env.DB_PASS || 'password',
   database: process.env.DB_NAME || 'cdl_management',
   entities: [__dirname + '/**/*.entity{.ts,.js}'],
-  migrations: [__dirname + '/../db/migrations/*{.ts,.js}'], // Path to migrations folder
+  migrations: [__dirname + '/../db/migrations/*{.ts,.js}'], 
   logging: true,
-  synchronize: false, // This MUST be false
+  synchronize: false,
 };
 
 const dataSource = new DataSource(dataSourceOptions);

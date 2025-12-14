@@ -9,11 +9,6 @@ export class JwtAuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest();
 
-    // Accept token from multiple common locations to be tolerant of client implementations:
-    // 1) Authorization: Bearer <token>
-    // 2) x-access-token header
-    // 3) access_token query parameter
-    // 4) body.accessToken or body.token (for non-GET requests)
     let token: string | undefined;
 
     const authHeader = req.headers?.authorization || req.headers?.Authorization;
@@ -42,7 +37,6 @@ export class JwtAuthGuard implements CanActivate {
     }
     try {
       const payload: any = jwt.verify(token, this.jwtSecret);
-      // attach payload to request for downstream handlers (e.g., controllers/services)
       req.user = payload;
       return true;
     } catch (err) {

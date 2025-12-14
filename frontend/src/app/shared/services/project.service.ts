@@ -4,6 +4,8 @@ import { Observable } from 'rxjs';
 import { Project, ProjectPlatform, ProjectStatus } from '../models/project.model';
 import { User } from '../models/user.model';
 
+import { environment } from '../../../environments/environment';
+
 @Injectable({
   providedIn: 'root'
 })
@@ -11,7 +13,7 @@ import { User } from '../models/user.model';
  * Service for managing project-related operations including creation, updates, and assignments.
  */
 export class ProjectService {
-  private apiUrl = 'http://localhost:3000/projects';
+  private apiUrl = `${environment.backendUrl}/projects`;
 
   constructor(private http: HttpClient) { }
 
@@ -51,7 +53,7 @@ export class ProjectService {
     return this.http.post<any>(`${this.apiUrl}/stages/${stageId}/tasks`, taskData);
   }
   getAvailableManagers(): Observable<User[]> {
-    return this.http.get<User[]>(`http://localhost:3000/users`);
+    return this.http.get<User[]>(`${environment.backendUrl}/users`);
   }
 
   getAssignedProjects(userId: string): Observable<Project[]> {
@@ -67,6 +69,6 @@ export class ProjectService {
   }
 
   updateTask(taskId: string, updates: any): Observable<any> {
-    return this.http.patch(`http://localhost:3000/tasks/${taskId}`, updates);
+    return this.http.patch(`${environment.backendUrl}/tasks/${taskId}`, updates);
   }
 }

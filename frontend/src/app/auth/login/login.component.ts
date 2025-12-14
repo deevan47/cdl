@@ -87,4 +87,52 @@ export class LoginComponent {
       }
     });
   }
+
+  googleLogin() {
+    this.error = '';
+    this.isLoading = true;
+    console.log('[LOGIN_GOOGLE_START] Initiating Google Login');
+
+    this.auth.loginWithGoogle().subscribe({
+      next: (res) => {
+        console.log('[LOGIN_GOOGLE_SUCCESS] Received response', {
+          hasToken: !!res?.accessToken,
+          userRole: res?.user?.role,
+        });
+
+        if (res?.accessToken && res?.user) {
+          try {
+            localStorage.setItem('token', res.accessToken);
+            localStorage.setItem('userInfo', JSON.stringify(res.user));
+            if (res.assignedProjects) {
+              localStorage.setItem('assignedProjects', JSON.stringify(res.assignedProjects));
+            } else {
+              localStorage.setItem('assignedProjects', JSON.stringify([]));
+            }
+            console.log('[LOGIN_STORAGE] Token and user info saved to localStorage');
+            console.log(`[LOGIN_NAVIGATE] Login successful. Navigating to unified dashboard.`);
+            this.router.navigate(['/dashboard']);
+            this.isLoading = false;
+          } catch (e) {
+            console.error('[LOGIN_STORAGE_ERROR] Failed to save login info to localStorage', e);
+            this.error = 'Failed to save login info. Check browser console.';
+            this.isLoading = false;
+          }
+        } else {
+          this.error = 'Login failed: Invalid response from server.';
+          this.isLoading = false;
+        }
+      },
+      error: (err) => {
+        console.error('[LOGIN_GOOGLE_ERROR]', err);
+        if (err?.error?.message === 'Your account is pending approval. An email has been sent to the administrator.' ||
+          err?.error?.message === 'Your account is pending approval. Please contact the administrator.') {
+          this.error = err.error.message;
+        } else {
+          this.error = err?.error?.message || 'Google Login failed.';
+        }
+        this.isLoading = false;
+      }
+    });
+  }
 }

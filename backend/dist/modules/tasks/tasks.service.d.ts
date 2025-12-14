@@ -1,10 +1,12 @@
 import { Repository } from 'typeorm';
 import { Task } from './entities/task.entity';
 import { User } from '../users/entities/user.entity';
+import { NotificationsService } from '../notifications/notifications.service';
 export declare class TasksService {
     private readonly taskRepository;
     private readonly userRepository;
-    constructor(taskRepository: Repository<Task>, userRepository: Repository<User>);
+    private readonly notificationsService;
+    constructor(taskRepository: Repository<Task>, userRepository: Repository<User>, notificationsService: NotificationsService);
     findTasksByUserId(userId: string): Promise<Task[]>;
     create(createTaskDto: Partial<Task>): Promise<Task[]>;
     findAll(): Promise<Task[]>;

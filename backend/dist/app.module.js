@@ -8,14 +8,20 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
-const config_1 = require("@nestjs/config");
 const typeorm_1 = require("@nestjs/typeorm");
-const projects_module_1 = require("./modules/projects/projects/projects.module");
+const config_1 = require("@nestjs/config");
 const users_module_1 = require("./modules/users/users.module");
-const tasks_module_1 = require("./modules/tasks/tasks.module");
 const auth_module_1 = require("./modules/auth/auth.module");
+const projects_module_1 = require("./modules/projects/projects/projects.module");
+const tasks_module_1 = require("./modules/tasks/tasks.module");
 const comments_module_1 = require("./modules/comments/comments.module");
-const app_controller_1 = require("./app.controller");
+const notifications_module_1 = require("./modules/notifications/notifications.module");
+const user_entity_1 = require("./modules/users/entities/user.entity");
+const project_entity_1 = require("./modules/projects/entities/project.entity");
+const project_stage_entity_1 = require("./modules/projects/entities/project-stage.entity");
+const task_entity_1 = require("./modules/tasks/entities/task.entity");
+const comment_entity_1 = require("./modules/comments/entities/comment.entity");
+const notification_entity_1 = require("./modules/notifications/entities/notification.entity");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -27,20 +33,23 @@ exports.AppModule = AppModule = __decorate([
                 imports: [config_1.ConfigModule],
                 useFactory: (configService) => ({
                     type: 'postgres',
-                    url: configService.get('DATABASE_URL'),
-                    autoLoadEntities: true,
+                    host: configService.get('DB_HOST') || 'localhost',
+                    port: configService.get('DB_PORT') || 5432,
+                    username: configService.get('DB_USERNAME') || 'postgres',
+                    password: configService.get('DB_PASSWORD') || 'postgres',
+                    database: configService.get('DB_NAME') || 'cdl_pms',
+                    entities: [user_entity_1.User, project_entity_1.Project, project_stage_entity_1.ProjectStage, task_entity_1.Task, comment_entity_1.Comment, notification_entity_1.Notification],
                     synchronize: true,
                 }),
                 inject: [config_1.ConfigService],
             }),
-            auth_module_1.AuthModule,
             users_module_1.UsersModule,
+            auth_module_1.AuthModule,
             projects_module_1.ProjectsModule,
             tasks_module_1.TasksModule,
             comments_module_1.CommentsModule,
+            notifications_module_1.NotificationsModule,
         ],
-        controllers: [app_controller_1.AppController],
-        providers: [],
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map

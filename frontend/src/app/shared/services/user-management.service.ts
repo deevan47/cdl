@@ -3,11 +3,13 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { User, UserRole, CreateUserDto, UpdateUserDto } from '../models/user.model';
 
+import { environment } from '../../../environments/environment';
+
 @Injectable({
   providedIn: 'root'
 })
 export class UserManagementService {
-  private apiUrl = 'http://localhost:3000/users';
+  private apiUrl = `${environment.backendUrl}/users`;
 
   constructor(private http: HttpClient) { }
 
