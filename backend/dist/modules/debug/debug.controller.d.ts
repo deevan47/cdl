@@ -1,4 +1,4 @@
-import { UsersService } from '../users/users.service';
+import { UsersService } from '../users/user.service';
 export declare class DebugController {
     private readonly usersService;
     constructor(usersService: UsersService);

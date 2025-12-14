@@ -7,7 +7,8 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "tailwind:init": "npx tailwindcss init"
+    "tailwind:init": "npx tailwindcss init",
+    "deploy": "ng build && echo 'Frontend built. To deploy to Render, commit and push your changes to GitHub.'"
   },
   "private": true,
   "dependencies": {

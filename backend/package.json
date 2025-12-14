@@ -12,7 +12,8 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
-    "seed": "ts-node src/seed.ts"
+    "seed": "ts-node src/seed.ts",
+    "deploy": "npm run build && echo 'Backend built. To deploy to Render, commit and push your changes to GitHub.'"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",

@@ -11,7 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DebugController = void 0;
 const common_1 = require("@nestjs/common");
-const users_service_1 = require("../users/users.service");
+const user_service_1 = require("../users/user.service");
 let DebugController = class DebugController {
     constructor(usersService) {
         this.usersService = usersService;
@@ -32,6 +32,6 @@ __decorate([
 ], DebugController.prototype, "listAllUsers", null);
 exports.DebugController = DebugController = __decorate([
     (0, common_1.Controller)('debug'),
-    __metadata("design:paramtypes", [users_service_1.UsersService])
+    __metadata("design:paramtypes", [user_service_1.UsersService])
 ], DebugController);
 //# sourceMappingURL=debug.controller.js.map
